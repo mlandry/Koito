@@ -1,0 +1,29 @@
+import { reactRouter } from "@react-router/dev/vite";
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+
+const isDocker = process.env.BUILD_TARGET === 'docker';
+
+export default defineConfig({
+  plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
+  server: {
+    proxy: {
+      '/apis': {
+        target: 'http://localhost:4110',
+        changeOrigin: true,
+      },
+      '/images': {
+        target: 'http://192.168.0.153:4110',
+        changeOrigin: true,
+      }
+    }
+  },
+  resolve: {
+		alias: {
+			...(isDocker
+        ? { 'react-dom/server': 'react-dom/server.node' }
+        : {}),
+		},
+	},
+});

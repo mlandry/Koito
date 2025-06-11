@@ -1,0 +1,185 @@
+import { useQuery } from "@tanstack/react-query"
+import { getActivity, type getActivityArgs } from "api/api"
+import Popup from "./Popup"
+import { useEffect, useState } from "react"
+import { useTheme } from "~/hooks/useTheme"
+import ActivityOptsSelector from "./ActivityOptsSelector"
+
+function getPrimaryColor(): string {
+    const value = getComputedStyle(document.documentElement)
+        .getPropertyValue('--color-primary')
+        .trim();
+
+    const rgbMatch = value.match(/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/);
+    if (rgbMatch) {
+        const [, r, g, b] = rgbMatch.map(Number);
+        return (
+            '#' +
+            [r, g, b]
+                .map((n) => n.toString(16).padStart(2, '0'))
+                .join('')
+        );
+    }
+
+    return value;
+}
+
+interface Props {
+    step?: string 
+    range?: number 
+    month?: number 
+    year?: number 
+    artistId?: number 
+    albumId?: number 
+    trackId?: number
+    configurable?: boolean
+    autoAdjust?: boolean
+}
+
+export default function ActivityGrid({
+        step = 'day',
+        range = 182,
+        month = 0,
+        year = 0,
+        artistId = 0,
+        albumId = 0,
+        trackId = 0,
+        configurable = false,
+        autoAdjust = false,
+    }: Props) {
+
+    const [color, setColor] = useState(getPrimaryColor())
+    const [stepState, setStep] = useState(step)
+    const [rangeState, setRange] = useState(range)
+        
+    const { isPending, isError, data, error } = useQuery({ 
+        queryKey: [
+            'listen-activity', 
+            {
+                step: stepState,
+                range: rangeState,
+                month: month,
+                year: year,
+                artist_id: artistId,
+                album_id: albumId,
+                track_id: trackId
+            },
+        ], 
+        queryFn: ({ queryKey }) => getActivity(queryKey[1] as getActivityArgs),
+    });
+
+
+    const { theme } = useTheme();
+    useEffect(() => {
+        const raf = requestAnimationFrame(() => {
+          const color = getPrimaryColor()
+          setColor(color);
+        });
+      
+        return () => cancelAnimationFrame(raf);
+      }, [theme]);      
+
+    if (isPending) { 
+        return (
+            <div className="w-[500px]">
+                <h2>Activity</h2>
+                <p>Loading...</p>
+            </div>
+        )
+    }
+    if (isError) return <p className="error">Error:{error.message}</p>
+
+    // from https://css-tricks.com/snippets/javascript/lighten-darken-color/
+    function LightenDarkenColor(hex: string, lum: number) {
+        // validate hex string
+        hex = String(hex).replace(/[^0-9a-f]/gi, '');
+        if (hex.length < 6) {
+            hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+        }
+        lum = lum || 0;
+
+        // convert to decimal and change luminosity
+        var rgb = "#", c, i;
+        for (i = 0; i < 3; i++) {
+            c = parseInt(hex.substring(i*2,(i*2)+2), 16);
+            c = Math.round(Math.min(Math.max(0, c + (c * lum)), 255)).toString(16);
+            rgb += ("00"+c).substring(c.length);
+        }
+
+        return rgb;
+    }
+
+    const getDarkenAmount = (v: number, t: number): number => {
+
+        if (autoAdjust) {
+            // automatically adjust the target value based on step
+            // the smartest way to do this would be to have the api return the
+            // highest value in the range. too bad im not smart
+            switch (stepState) {
+                case 'day':
+                    t = 10
+                    break;
+                case 'week':
+                    t = 20
+                    break;
+                case 'month':
+                    t = 50
+                    break;
+                case 'year':
+                    t = 100
+                    break;
+            }
+        }
+
+        v = Math.min(v, t)
+        if (theme === "pearl") {
+            // special case for the only light theme lol
+            // could be generalized by pragmatically comparing the
+            // lightness of the bg vs the primary but eh
+            return ((t-v) / t)
+        } else {
+            return ((v-t) / t) * .8
+        }
+    }
+
+    const dotSize = 12;
+
+    return (
+        <div className="flex flex-col items-start">
+            <h2>Activity</h2>
+            {configurable ?
+            <ActivityOptsSelector rangeSetter={setRange} currentRange={rangeState} stepSetter={setStep} currentStep={stepState} />
+            :
+            ''
+            }
+            <div className="grid grid-flow-col grid-rows-7 gap-[5px]">
+                {data.map((item) => (
+                    <div
+                        key={new Date(item.start_time).toString()}
+                        style={{ width: dotSize, height: dotSize }}
+                    >
+                        <Popup
+                            position="top"
+                            space={dotSize}
+                            extraClasses="left-2"
+                            inner={`${new Date(item.start_time).toLocaleDateString()} ${item.listens} plays`}
+                        >
+                            <div
+                                style={{
+                                    width: dotSize,
+                                    height: dotSize,
+                                    display: 'inline-block',
+                                    background:
+                                        item.listens > 0
+                                            ? LightenDarkenColor(color, getDarkenAmount(item.listens, 100))
+                                            : 'var(--color-bg-secondary)',
+                                }}
+                                className={`rounded-[3px] ${item.listens > 0 ? '' : 'border-[0.5px] border-(--color-bg-tertiary)'}`}
+                            ></div>
+                        </Popup>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
