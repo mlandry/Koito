@@ -31,6 +31,12 @@ func ImportSpotifyFile(ctx context.Context, store db.DB, filename string) error 
 		l.Err(err).Msgf("Failed to read import file: %s", filename)
 		return err
 	}
+	var throttleFunc = func() {}
+	if ms := cfg.ThrottleImportMs(); ms > 0 {
+		throttleFunc = func() {
+			time.Sleep(time.Duration(ms) * time.Millisecond)
+		}
+	}
 	export := make([]SpotifyExportItem, 0)
 	err = json.NewDecoder(file).Decode(&export)
 	if err != nil {
@@ -59,6 +65,7 @@ func ImportSpotifyFile(ctx context.Context, store db.DB, filename string) error 
 			l.Err(err).Msg("Failed to import spotify playback item")
 			return err
 		}
+		throttleFunc()
 	}
 	_, err = os.Stat(path.Join(cfg.ConfigDir(), "import_complete"))
 	if err != nil {

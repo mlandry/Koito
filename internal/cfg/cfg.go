@@ -36,6 +36,7 @@ const (
 	SKIP_IMPORT_ENV               = "KOITO_SKIP_IMPORT"
 	ALLOWED_HOSTS_ENV             = "KOITO_ALLOWED_HOSTS"
 	DISABLE_RATE_LIMIT_ENV        = "KOITO_DISABLE_RATE_LIMIT"
+	THROTTLE_IMPORTS_MS           = "KOITO_THROTTLE_IMPORTS_MS"
 )
 
 type config struct {
@@ -60,6 +61,7 @@ type config struct {
 	allowedHosts         []string
 	allowAllHosts        bool
 	disableRateLimit     bool
+	importThrottleMs     int
 }
 
 var (
@@ -103,6 +105,8 @@ func loadConfig(getenv func(string) string) (*config, error) {
 		cfg.lbzRelayToken = getenv(LBZ_RELAY_TOKEN_ENV)
 		cfg.lbzRelayUrl = getenv(LBZ_RELAY_URL_ENV)
 	}
+
+	cfg.importThrottleMs, _ = strconv.Atoi(getenv(THROTTLE_IMPORTS_MS))
 
 	cfg.disableRateLimit = parseBool(getenv(DISABLE_RATE_LIMIT_ENV))
 
@@ -277,4 +281,10 @@ func RateLimitDisabled() bool {
 	lock.RLock()
 	defer lock.RUnlock()
 	return globalConfig.disableRateLimit
+}
+
+func ThrottleImportMs() int {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.importThrottleMs
 }

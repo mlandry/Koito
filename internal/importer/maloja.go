@@ -39,6 +39,12 @@ func ImportMalojaFile(ctx context.Context, store db.DB, filename string) error {
 		l.Err(err).Msgf("Failed to read import file: %s", filename)
 		return err
 	}
+	var throttleFunc = func() {}
+	if ms := cfg.ThrottleImportMs(); ms > 0 {
+		throttleFunc = func() {
+			time.Sleep(time.Duration(ms) * time.Millisecond)
+		}
+	}
 	export := new(MalojaExport)
 	err = json.NewDecoder(file).Decode(&export)
 	if err != nil {
@@ -73,6 +79,7 @@ func ImportMalojaFile(ctx context.Context, store db.DB, filename string) error {
 			l.Err(err).Msg("Failed to import maloja playback item")
 			return err
 		}
+		throttleFunc()
 	}
 	_, err = os.Stat(path.Join(cfg.ConfigDir(), "import_complete"))
 	if err != nil {
