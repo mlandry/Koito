@@ -144,7 +144,7 @@ func loadConfig(getenv func(string) string) (*config, error) {
 	case "fatal":
 		cfg.logLevel = 4
 	default:
-		cfg.logLevel = 0
+		cfg.logLevel = 1
 	}
 	return cfg, nil
 }
