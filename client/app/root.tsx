@@ -58,7 +58,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-    let theme = localStorage.getItem('theme') ?? 'midnight'
+    let theme = localStorage.getItem('theme') ?? 'yuu'
 
   return (
     <>
@@ -99,7 +99,7 @@ export function ErrorBoundary() {
         stack = error.stack;
     }
 
-    let theme = 'midnight'
+    let theme = 'yuu'
     try {
         theme = localStorage.getItem('theme') ?? theme
     } catch(err) {
