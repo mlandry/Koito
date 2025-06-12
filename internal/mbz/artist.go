@@ -25,7 +25,7 @@ type MusicBrainzArtistAlias struct {
 const artistAliasFmtStr = "%s/ws/2/artist/%s?inc=aliases"
 
 func (c *MusicBrainzClient) getArtist(ctx context.Context, id uuid.UUID) (*MusicBrainzArtist, error) {
-	var mbzArtist *MusicBrainzArtist
+	mbzArtist := new(MusicBrainzArtist)
 	err := c.getEntity(ctx, artistAliasFmtStr, id, mbzArtist)
 	if err != nil {
 		return nil, err
