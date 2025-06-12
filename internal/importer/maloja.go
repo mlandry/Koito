@@ -64,7 +64,7 @@ func ImportMalojaFile(ctx context.Context, store db.DB, filename string) error {
 			l.Debug().Msg("Skipping invalid maloja import item")
 			continue
 		}
-		ts := time.Unix(item.Time, 0)
+		ts := time.Unix(item.Time, 0).UTC()
 		opts := catalog.SubmitListenOpts{
 			MbzCaller:    &mbz.MusicBrainzClient{},
 			Artist:       item.Track.Artists[0],
