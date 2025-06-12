@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createApiKey, deleteApiKey, getApiKeys, type ApiKey } from "api/api";
 import { AsyncButton } from "../AsyncButton";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Copy, Trash } from "lucide-react";
 
 type CopiedState = {
@@ -16,6 +16,22 @@ export default function ApiKeysModal() {
     const [err, setError ] = useState<string>()
     const [displayData, setDisplayData] = useState<ApiKey[]>([])
     const [copied, setCopied] = useState<CopiedState | null>(null);
+    const [expandedKey, setExpandedKey] = useState<string | null>(null);
+    const textRefs = useRef<Record<string, HTMLDivElement | null>>({});
+    
+    const handleRevealAndSelect = (key: string) => {
+        setExpandedKey(key);
+        setTimeout(() => {
+            const el = textRefs.current[key];
+            if (el) {
+                const range = document.createRange();
+                range.selectNodeContents(el);
+                const sel = window.getSelection();
+                sel?.removeAllRanges();
+                sel?.addRange(range);
+            }
+        }, 0);
+    };
         
     const { isPending, isError, data, error } = useQuery({ 
         queryKey: [
@@ -44,19 +60,38 @@ export default function ApiKeysModal() {
     }
 
     const handleCopy = (e: React.MouseEvent<HTMLButtonElement>, text: string) => {
-        navigator.clipboard.writeText(text);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+        } else {
+            fallbackCopy(text);
+        }
     
         const parentRect = (e.currentTarget.closest(".relative") as HTMLElement).getBoundingClientRect();
         const buttonRect = e.currentTarget.getBoundingClientRect();
     
         setCopied({
-            x: buttonRect.left - parentRect.left + buttonRect.width / 2, // center of button
-            y: buttonRect.top - parentRect.top - 8, // above the button
+            x: buttonRect.left - parentRect.left + buttonRect.width / 2,
+            y: buttonRect.top - parentRect.top - 8,
             visible: true,
         });
     
         setTimeout(() => setCopied(null), 1500);
-    };    
+    };
+    
+    const fallbackCopy = (text: string) => {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed"; // prevent scroll to bottom
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        try {
+            document.execCommand("copy");
+        } catch (err) {
+            console.error("Fallback: Copy failed", err);
+        }
+        document.body.removeChild(textarea);
+    };
     
     const handleCreateApiKey = () => {
         setError(undefined)
@@ -93,8 +128,20 @@ export default function ApiKeysModal() {
         <h2>API Keys</h2>
         <div className="flex flex-col gap-4 relative">
             {displayData.map((v) => (
-                <div className="flex gap-2">
-                    <div className="bg p-3 rounded-md flex-grow" key={v.key}>{v.key.slice(0, 8)+'...'} {v.label}</div>
+                <div className="flex gap-2"><div
+                        key={v.key}
+                        ref={el => {
+                            textRefs.current[v.key] = el;
+                        }}
+                        onClick={() => handleRevealAndSelect(v.key)}
+                        className={`bg p-3 rounded-md flex-grow cursor-pointer select-text ${
+                            expandedKey === v.key ? '' : 'truncate'
+                        }`}
+                        style={{ whiteSpace: 'nowrap' }}
+                        title={v.key} // optional tooltip
+                    >
+                        {expandedKey === v.key ? v.key : `${v.key.slice(0, 8)}... ${v.label}`}
+                    </div>            
                     <button onClick={(e) => handleCopy(e, v.key)} className="large-button px-5 rounded-md"><Copy size={16} /></button>
                     <AsyncButton loading={loading} onClick={() => handleDeleteApiKey(v.id)} confirm><Trash size={16} /></AsyncButton>
                 </div>
