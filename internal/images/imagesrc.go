@@ -51,6 +51,10 @@ func Initialize(opts ImageSourceOpts) {
 	})
 }
 
+func Shutdown() {
+	imgsrc.deezerC.Shutdown()
+}
+
 func GetArtistImage(ctx context.Context, opts ArtistImageOpts) (string, error) {
 	l := logger.FromContext(ctx)
 	if imgsrc.deezerC != nil {

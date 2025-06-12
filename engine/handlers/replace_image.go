@@ -20,7 +20,7 @@ type ReplaceImageResponse struct {
 	Message string `json:"message,omitempty"`
 }
 
-func ReplaceImageHandler(store db.DB, ip *catalog.ImageProcessor) http.HandlerFunc {
+func ReplaceImageHandler(store db.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		l := logger.FromContext(ctx)
@@ -80,7 +80,7 @@ func ReplaceImageHandler(store db.DB, ip *catalog.ImageProcessor) http.HandlerFu
 				dlSize = catalog.ImageSizeLarge
 			}
 			l.Debug().Msg("Downloading album image from source...")
-			err = ip.EnqueueDownloadAndCache(ctx, id, fileUrl, dlSize)
+			err = catalog.DownloadAndCacheImage(ctx, id, fileUrl, dlSize)
 			if err != nil {
 				l.Err(err).Msg("Failed to cache image")
 			}
@@ -120,7 +120,7 @@ func ReplaceImageHandler(store db.DB, ip *catalog.ImageProcessor) http.HandlerFu
 				dlSize = catalog.ImageSizeLarge
 			}
 
-			err = ip.EnqueueCompressAndSave(ctx, id.String(), dlSize, file)
+			err = catalog.CompressAndSaveImage(ctx, id.String(), dlSize, file)
 			if err != nil {
 				utils.WriteError(w, "Could not save file", http.StatusInternalServerError)
 				return
