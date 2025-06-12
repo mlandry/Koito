@@ -22,6 +22,7 @@ type AssociateArtistsOpts struct {
 	ArtistName   string
 	TrackTitle   string
 	Mbzc         mbz.MusicBrainzCaller
+	IP           *ImageProcessor
 }
 
 func AssociateArtists(ctx context.Context, d db.DB, opts AssociateArtistsOpts) ([]*models.Artist, error) {
@@ -40,7 +41,7 @@ func AssociateArtists(ctx context.Context, d db.DB, opts AssociateArtistsOpts) (
 
 	if len(opts.ArtistNames) > len(result) {
 		l.Debug().Msg("Associating artists by list of artist names")
-		nameMatches, err := matchArtistsByNames(ctx, opts.ArtistNames, result, d)
+		nameMatches, err := matchArtistsByNames(ctx, opts.ArtistNames, result, d, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -50,7 +51,7 @@ func AssociateArtists(ctx context.Context, d db.DB, opts AssociateArtistsOpts) (
 	if len(result) < 1 {
 		allArtists := slices.Concat(opts.ArtistNames, ParseArtists(opts.ArtistName, opts.TrackTitle))
 		l.Debug().Msgf("Associating artists by artist name(s) %v and track title '%s'", allArtists, opts.TrackTitle)
-		fallbackMatches, err := matchArtistsByNames(ctx, allArtists, nil, d)
+		fallbackMatches, err := matchArtistsByNames(ctx, allArtists, nil, d, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -67,7 +68,7 @@ func matchArtistsByMBID(ctx context.Context, d db.DB, opts AssociateArtistsOpts)
 	for _, id := range opts.ArtistMbzIDs {
 		if id == uuid.Nil {
 			l.Warn().Msg("Provided artist has uuid.Nil MusicBrainzID")
-			return matchArtistsByNames(ctx, opts.ArtistNames, result, d)
+			return matchArtistsByNames(ctx, opts.ArtistNames, result, d, opts)
 		}
 		a, err := d.GetArtist(ctx, db.GetArtistOpts{
 			MusicBrainzID: id,
@@ -85,20 +86,20 @@ func matchArtistsByMBID(ctx context.Context, d db.DB, opts AssociateArtistsOpts)
 		if len(opts.ArtistNames) < 1 {
 			opts.ArtistNames = slices.Concat(opts.ArtistNames, ParseArtists(opts.ArtistName, opts.TrackTitle))
 		}
-		a, err = resolveAliasOrCreateArtist(ctx, id, opts.ArtistNames, d, opts.Mbzc)
+		a, err = resolveAliasOrCreateArtist(ctx, id, opts.ArtistNames, d, opts)
 		if err != nil {
 			l.Warn().Msg("MusicBrainz unreachable, falling back to artist name matching")
-			return matchArtistsByNames(ctx, opts.ArtistNames, result, d)
+			return matchArtistsByNames(ctx, opts.ArtistNames, result, d, opts)
 			// return nil, err
 		}
 		result = append(result, a)
 	}
 	return result, nil
 }
-func resolveAliasOrCreateArtist(ctx context.Context, mbzID uuid.UUID, names []string, d db.DB, mbz mbz.MusicBrainzCaller) (*models.Artist, error) {
+func resolveAliasOrCreateArtist(ctx context.Context, mbzID uuid.UUID, names []string, d db.DB, opts AssociateArtistsOpts) (*models.Artist, error) {
 	l := logger.FromContext(ctx)
 
-	aliases, err := mbz.GetArtistPrimaryAliases(ctx, mbzID)
+	aliases, err := opts.Mbzc.GetArtistPrimaryAliases(ctx, mbzID)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +146,7 @@ func resolveAliasOrCreateArtist(ctx context.Context, mbzID uuid.UUID, names []st
 		}
 		imgid = uuid.New()
 		l.Debug().Msg("Downloading artist image from source...")
-		err = DownloadAndCacheImage(ctx, imgid, imgUrl, size)
+		err = opts.IP.EnqueueDownloadAndCache(ctx, imgid, imgUrl, size)
 		if err != nil {
 			l.Err(err).Msg("Failed to cache image")
 		}
@@ -167,7 +168,7 @@ func resolveAliasOrCreateArtist(ctx context.Context, mbzID uuid.UUID, names []st
 	return u, nil
 }
 
-func matchArtistsByNames(ctx context.Context, names []string, existing []*models.Artist, d db.DB) ([]*models.Artist, error) {
+func matchArtistsByNames(ctx context.Context, names []string, existing []*models.Artist, d db.DB, opts AssociateArtistsOpts) ([]*models.Artist, error) {
 	l := logger.FromContext(ctx)
 	var result []*models.Artist
 
@@ -198,7 +199,7 @@ func matchArtistsByNames(ctx context.Context, names []string, existing []*models
 				}
 				imgid = uuid.New()
 				l.Debug().Msg("Downloading artist image from source...")
-				err = DownloadAndCacheImage(ctx, imgid, imgUrl, size)
+				err = opts.IP.EnqueueDownloadAndCache(ctx, imgid, imgUrl, size)
 				if err != nil {
 					l.Err(err).Msg("Failed to cache image")
 				}

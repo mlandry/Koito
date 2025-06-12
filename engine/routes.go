@@ -10,6 +10,7 @@ import (
 
 	"github.com/gabehf/koito/engine/handlers"
 	"github.com/gabehf/koito/engine/middleware"
+	"github.com/gabehf/koito/internal/catalog"
 	"github.com/gabehf/koito/internal/cfg"
 	"github.com/gabehf/koito/internal/db"
 	mbz "github.com/gabehf/koito/internal/mbz"
@@ -24,10 +25,11 @@ func bindRoutes(
 	ready *atomic.Bool,
 	db db.DB,
 	mbz mbz.MusicBrainzCaller,
+	ip *catalog.ImageProcessor,
 ) {
 	r.With(chimiddleware.RequestSize(5<<20)).
 		With(middleware.AllowedHosts).
-		Get("/images/{size}/{filename}", handlers.ImageHandler(db))
+		Get("/images/{size}/{filename}", handlers.ImageHandler(db, ip))
 
 	r.Route("/apis/web/v1", func(r chi.Router) {
 		r.Use(middleware.AllowedHosts)
@@ -65,7 +67,7 @@ func bindRoutes(
 
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.ValidateSession(db))
-			r.Post("/replace-image", handlers.ReplaceImageHandler(db))
+			r.Post("/replace-image", handlers.ReplaceImageHandler(db, ip))
 			r.Post("/merge/tracks", handlers.MergeTracksHandler(db))
 			r.Post("/merge/albums", handlers.MergeReleaseGroupsHandler(db))
 			r.Post("/merge/artists", handlers.MergeArtistsHandler(db))

@@ -17,7 +17,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func ImageHandler(store db.DB) http.HandlerFunc {
+func ImageHandler(store db.DB, ip *catalog.ImageProcessor) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		l := logger.FromContext(r.Context())
 		size := chi.URLParam(r, "size")
@@ -31,7 +31,7 @@ func ImageHandler(store db.DB) http.HandlerFunc {
 
 		imgid, err := uuid.Parse(filename)
 		if err != nil {
-			serveDefaultImage(w, r, imageSize)
+			serveDefaultImage(w, r, imageSize, ip)
 			return
 		}
 
@@ -51,7 +51,7 @@ func ImageHandler(store db.DB) http.HandlerFunc {
 			if _, err = os.Stat(fullSizePath); os.IsNotExist(err) {
 				if _, err = os.Stat(largeSizePath); os.IsNotExist(err) {
 					l.Warn().Msgf("Could not find requested image %s. If this image is tied to an album or artist, it should be replaced", imgid.String())
-					serveDefaultImage(w, r, imageSize)
+					serveDefaultImage(w, r, imageSize, ip)
 					return
 				} else if err != nil {
 					// non-not found error for full file
@@ -80,7 +80,7 @@ func ImageHandler(store db.DB) http.HandlerFunc {
 				return
 			}
 
-			err = catalog.CompressAndSaveImage(r.Context(), imgid.String(), imageSize, bytes.NewReader(imageBuf))
+			err = ip.EnqueueCompressAndSave(r.Context(), imgid.String(), imageSize, bytes.NewReader(imageBuf))
 			if err != nil {
 				l.Err(err).Msg("Failed to save compressed image to cache")
 			}
@@ -96,7 +96,7 @@ func ImageHandler(store db.DB) http.HandlerFunc {
 	}
 }
 
-func serveDefaultImage(w http.ResponseWriter, r *http.Request, size catalog.ImageSize) {
+func serveDefaultImage(w http.ResponseWriter, r *http.Request, size catalog.ImageSize, ip *catalog.ImageProcessor) {
 	var lock sync.Mutex
 	l := logger.FromContext(r.Context())
 	defaultImagePath := filepath.Join(cfg.ConfigDir(), catalog.ImageCacheDir, string(size), "default_img")
@@ -127,7 +127,7 @@ func serveDefaultImage(w http.ResponseWriter, r *http.Request, size catalog.Imag
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		err = catalog.CompressAndSaveImage(r.Context(), "default_img", size, file)
+		err = ip.EnqueueCompressAndSave(r.Context(), "default_img", size, file)
 		if err != nil {
 			l.Err(err).Msg("Error when caching default img at desired size")
 			w.WriteHeader(http.StatusInternalServerError)

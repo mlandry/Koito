@@ -23,6 +23,7 @@ type AssociateAlbumOpts struct {
 	ReleaseName       string
 	TrackName         string // required
 	Mbzc              mbz.MusicBrainzCaller
+	IP                *ImageProcessor
 }
 
 func AssociateAlbum(ctx context.Context, d db.DB, opts AssociateAlbumOpts) (*models.Album, error) {
@@ -133,7 +134,7 @@ func createOrUpdateAlbumWithMbzReleaseID(ctx context.Context, d db.DB, opts Asso
 			}
 			imgid = uuid.New()
 			l.Debug().Msg("Downloading album image from source...")
-			err = DownloadAndCacheImage(ctx, imgid, imgUrl, size)
+			err = opts.IP.EnqueueDownloadAndCache(ctx, imgid, imgUrl, size)
 			if err != nil {
 				l.Err(err).Msg("Failed to cache image")
 			}
@@ -216,7 +217,7 @@ func matchAlbumByTitle(ctx context.Context, d db.DB, opts AssociateAlbumOpts) (*
 			}
 			imgid = uuid.New()
 			l.Debug().Msg("Downloading album image from source...")
-			err = DownloadAndCacheImage(ctx, imgid, imgUrl, size)
+			err = opts.IP.EnqueueDownloadAndCache(ctx, imgid, imgUrl, size)
 			if err != nil {
 				l.Err(err).Msg("Failed to cache image")
 			}

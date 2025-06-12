@@ -47,6 +47,7 @@ type SubmitListenOpts struct {
 	Time              time.Time
 	UserID            int32
 	Client            string
+	IP                *ImageProcessor
 }
 
 const (
@@ -69,6 +70,7 @@ func SubmitListen(ctx context.Context, store db.DB, opts SubmitListenOpts) error
 			ArtistName:   opts.Artist,
 			Mbzc:         opts.MbzCaller,
 			TrackTitle:   opts.TrackTitle,
+			IP:           opts.IP,
 		})
 	if err != nil {
 		l.Error().Err(err).Msg("Failed to associate artists to listen")
@@ -90,6 +92,7 @@ func SubmitListen(ctx context.Context, store db.DB, opts SubmitListenOpts) error
 		TrackName:         opts.TrackTitle,
 		Mbzc:              opts.MbzCaller,
 		Artists:           artists,
+		IP:                opts.IP,
 	})
 	if err != nil {
 		l.Error().Err(err).Msg("Failed to associate release group to listen")

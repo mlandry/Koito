@@ -101,6 +101,8 @@ func Run(
 		EnableDeezer: !cfg.DeezerDisabled(),
 	})
 
+	ip := catalog.NewImageProcessor(1)
+
 	userCount, _ := store.CountUsers(ctx)
 	if userCount < 1 {
 		l.Debug().Msg("Creating default user...")
@@ -145,7 +147,7 @@ func Run(
 	mux.Use(chimiddleware.Recoverer)
 	mux.Use(chimiddleware.RealIP)
 	// call router binds on mux
-	bindRoutes(mux, &ready, store, mbzC)
+	bindRoutes(mux, &ready, store, mbzC, ip)
 
 	httpServer := &http.Server{
 		Addr:    cfg.ListenAddr(),
