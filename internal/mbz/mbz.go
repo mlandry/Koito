@@ -51,18 +51,19 @@ func (c *MusicBrainzClient) getEntity(ctx context.Context, fmtStr string, id uui
 	url := fmt.Sprintf(fmtStr, c.url, id.String())
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
+		l.Err(err).Msg("Failed to build MusicBrainz request")
 		return err
 	}
 	l.Debug().Msg("Adding MusicBrainz request to queue")
 	body, err := c.queue(ctx, req)
 	if err != nil {
-		l.Debug().Err(err)
+		l.Err(err).Msg("MusicBrainz request failed")
 		return err
 	}
 
 	err = json.Unmarshal(body, result)
 	if err != nil {
-		l.Debug().Err(err)
+		l.Err(err).Str("body", string(body)).Msg("Failed to unmarshal MusicBrainz response body")
 		return err
 	}
 
@@ -77,9 +78,12 @@ func (c *MusicBrainzClient) queue(ctx context.Context, req *http.Request) ([]byt
 	resultChan := c.requestQueue.Enqueue(func(client *http.Client, done chan<- queue.RequestResult) {
 		resp, err := client.Do(req)
 		if err != nil {
-			l.Debug().Err(err).Str("url", req.RequestURI).Msg("Failed to contact MusicBrainz")
+			l.Err(err).Str("url", req.RequestURI).Msg("Failed to contact MusicBrainz")
 			done <- queue.RequestResult{Err: err}
 			return
+		} else if resp.StatusCode >= 300 || resp.StatusCode < 200 {
+			err = fmt.Errorf("recieved non-ok status from MusicBrainz: %s", resp.Status)
+			done <- queue.RequestResult{Body: nil, Err: err}
 		}
 		defer resp.Body.Close()
 

@@ -69,6 +69,7 @@ func ReplaceImageHandler(store db.DB) http.HandlerFunc {
 			l.Debug().Msg("Image identified as remote file")
 			err = catalog.ValidateImageURL(fileUrl)
 			if err != nil {
+				l.Debug().AnErr("error", err).Msg("Invalid image")
 				utils.WriteError(w, "url is invalid or not an image file", http.StatusBadRequest)
 				return
 			}

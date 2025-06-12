@@ -71,6 +71,9 @@ func (c *DeezerClient) queue(ctx context.Context, req *http.Request) ([]byte, er
 			l.Debug().Err(err).Str("url", req.RequestURI).Msg("Failed to contact ImageSrc")
 			done <- queue.RequestResult{Err: err}
 			return
+		} else if resp.StatusCode >= 300 || resp.StatusCode < 200 {
+			err = fmt.Errorf("recieved non-ok status from Deezer: %s", resp.Status)
+			done <- queue.RequestResult{Body: nil, Err: err}
 		}
 		defer resp.Body.Close()
 
@@ -93,13 +96,13 @@ func (c *DeezerClient) getEntity(ctx context.Context, endpoint string, result an
 	l.Debug().Msg("Adding ImageSrc request to queue")
 	body, err := c.queue(ctx, req)
 	if err != nil {
-		l.Debug().Err(err)
+		l.Err(err).Msg("Deezer request failed")
 		return err
 	}
 
 	err = json.Unmarshal(body, result)
 	if err != nil {
-		l.Debug().Err(err)
+		l.Err(err).Msg("Failed to unmarshal Deezer response")
 		return err
 	}
 

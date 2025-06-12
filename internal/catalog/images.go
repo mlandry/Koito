@@ -133,7 +133,7 @@ func saveImage(filename string, size ImageSize, data io.Reader) error {
 	cacheDir := filepath.Join(configDir, ImageCacheDir)
 
 	// Ensure the cache directory exists
-	err := os.MkdirAll(filepath.Join(cacheDir, string(size)), os.ModePerm)
+	err := os.MkdirAll(filepath.Join(cacheDir, string(size)), 0744)
 	if err != nil {
 		return fmt.Errorf("failed to create full image cache directory: %w", err)
 	}

@@ -9,13 +9,13 @@ import (
 )
 
 const (
-	defaultBaseUrl        = "http://127.0.0.1"
+	// defaultBaseUrl        = "http://127.0.0.1"
 	defaultListenPort     = 4110
 	defaultMusicBrainzUrl = "https://musicbrainz.org"
 )
 
 const (
-	BASE_URL_ENV                  = "KOITO_BASE_URL"
+	// BASE_URL_ENV                  = "KOITO_BASE_URL"
 	DATABASE_URL_ENV              = "KOITO_DATABASE_URL"
 	BIND_ADDR_ENV                 = "KOITO_BIND_ADDR"
 	LISTEN_PORT_ENV               = "KOITO_LISTEN_PORT"
@@ -26,7 +26,6 @@ const (
 	ENABLE_LBZ_RELAY_ENV          = "KOITO_ENABLE_LBZ_RELAY"
 	LBZ_RELAY_URL_ENV             = "KOITO_LBZ_RELAY_URL"
 	LBZ_RELAY_TOKEN_ENV           = "KOITO_LBZ_RELAY_TOKEN"
-	LASTFM_API_KEY_ENV            = "KOITO_LASTFM_API_KEY"
 	CONFIG_DIR_ENV                = "KOITO_CONFIG_DIR"
 	DEFAULT_USERNAME_ENV          = "KOITO_DEFAULT_USERNAME"
 	DEFAULT_PASSWORD_ENV          = "KOITO_DEFAULT_PASSWORD"
@@ -40,10 +39,10 @@ const (
 )
 
 type config struct {
-	bindAddr             string
-	listenPort           int
-	configDir            string
-	baseUrl              string
+	bindAddr   string
+	listenPort int
+	configDir  string
+	// baseUrl              string
 	databaseUrl          string
 	musicBrainzUrl       string
 	logLevel             int
@@ -82,10 +81,10 @@ func Load(getenv func(string) string) error {
 // loadConfig loads the configuration from environment variables.
 func loadConfig(getenv func(string) string) (*config, error) {
 	cfg := new(config)
-	cfg.baseUrl = getenv(BASE_URL_ENV)
-	if cfg.baseUrl == "" {
-		cfg.baseUrl = defaultBaseUrl
-	}
+	// cfg.baseUrl = getenv(BASE_URL_ENV)
+	// if cfg.baseUrl == "" {
+	// 	cfg.baseUrl = defaultBaseUrl
+	// }
 	cfg.databaseUrl = getenv(DATABASE_URL_ENV)
 	if cfg.databaseUrl == "" {
 		return nil, errors.New("required parameter " + DATABASE_URL_ENV + " not provided")
@@ -175,11 +174,11 @@ func ConfigDir() string {
 	return globalConfig.configDir
 }
 
-func BaseUrl() string {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.baseUrl
-}
+// func BaseUrl() string {
+// 	lock.RLock()
+// 	defer lock.RUnlock()
+// 	return globalConfig.baseUrl
+// }
 
 func DatabaseUrl() string {
 	lock.RLock()

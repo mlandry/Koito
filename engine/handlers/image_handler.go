@@ -105,7 +105,7 @@ func serveDefaultImage(w http.ResponseWriter, r *http.Request, size catalog.Imag
 		defaultImagePath := filepath.Join(catalog.SourceImageDir(), "default_img")
 		if _, err = os.Stat(defaultImagePath); os.IsNotExist(err) {
 			l.Debug().Msg("Default image does not exist in cache, attempting to move...")
-			err = os.MkdirAll(filepath.Dir(defaultImagePath), 0755)
+			err = os.MkdirAll(filepath.Dir(defaultImagePath), 0744)
 			if err != nil {
 				l.Err(err).Msg("Error when attempting to create image_cache/full dir")
 				w.WriteHeader(http.StatusInternalServerError)
