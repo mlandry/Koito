@@ -20,9 +20,10 @@ Koito is configured using **environment variables**. This is the full list of co
 ##### KOITO_BIND_ADDR
 - Description: The address to bind to. The default blank value is equivalent to `0.0.0.0`.
 ##### KOITO_LISTEN_PORT
-- Default: `:4110`
+- Default: `4110`
 - Description: The port Koito will listen on.
 ##### KOITO_ENABLE_STRUCTURED_LOGGING
+- Default: `false`
 - Description: When set to `true`, will log in JSON format.
 ##### KOITO_ENABLE_FULL_IMAGE_CACHE
 - Default: `false`
