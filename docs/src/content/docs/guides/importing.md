@@ -3,7 +3,20 @@ title: Importing Data
 description: How to import your existing listening history from other services into Koito.
 ---
 
-Koito currently supports two sources to import data from: **Spotify** and **Maloja**.
+Koito currently supports the following sources to import data from:
+- Spotify
+- Maloja
+- LastFM (using https://lastfm.ghan.nl/export/)
+- ListenBrainz
+
+:::note
+ListenBrainz and LastFM imports can take a long time for large imports due to MusicBrainz requests being throttled at one per second. If you want
+these imports to go faster, you can [disable MusicBrainz](/reference/configuration/#koito_disable_musicbrainz) in the config while running the importer. However, this
+means that artist aliases will not be automatically fetched for imported artists. This also means that artists will not be associated with their MusicBrainz IDs internally,
+which can lead to some artist matching issues, especially for people who listen to lots of foreign music. You can also use 
+[your own MusicBrainz mirror](https://musicbrainz.org/doc/MusicBrainz_Server/Setup) and 
+[disable MusicBrainz rate limiting](/reference/configuration/#koito_musicbrainz_url) in the config if you want imports to be faster.
+:::
 
 ## Spotify
 
@@ -26,3 +39,13 @@ Koito relies on file names to find files to import. If the files aren't being im
 Maloja may have missing or inconsistent track duration information, which means that the 'Hours Listened' statistic may be incorrect after a Maloja import. However, track
 durations will be filled in as you submit listens using the API.
 :::
+
+## LastFM
+
+First, create an export file using [this tool from ghan.nl](https://lastfm.ghan.nl/export/) in JSON format. Then, place the resulting file into the `import` folder in your config directory.
+Once you restart Koito, it will automatically detect the file as a Last FM import, and begin adding your listen activity immediately.
+
+## ListenBrainz
+
+Create a ListenBrainz export file using [the export tool on the ListenBrainz website](https://listenbrainz.org/settings/export/). Then, place the resulting `.zip` file into the `import`
+folder in your config directory. Once you restart Koito, your ListenBrainz activity will immediately start being imported.

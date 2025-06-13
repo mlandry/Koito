@@ -12,7 +12,6 @@ services:
     container_name: koito
     depends_on:
       - db
-    user: 1000:1000
     environment:
       - KOITO_DATABASE_URL=postgres://postgres:secret_password@db:5432/koitodb
       - KOITO_ALLOWED_HOSTS=koito.example.com,192.168.0.100
@@ -34,38 +33,11 @@ services:
       - ./db-data:/var/lib/postgresql/data
 
 ```
-Or, you can use `docker run` commands. First, you need to run Postgres:
-```sh
-docker run \
-    --name psql \
-    --restart unless-stopped \
-    -e POSTGRES_DB=koitodb \
-    -e POSTGRES_USER=postgres \
-    -e POSTGRES_PASSWORD=secret_password \
-    -v ./db-data:/var/lib/postgresql/data \
-    -p 5432:5432 \
-    -d \
-    postgres:16
-```
-Then, run Koito:
-```sh
-docker run \
-    --name koito \
-    -u 1000:1000 \
-    -e KOITO_DATABASE_URL=postgres://postgres:secret_password@postgres_ip:5432/koitodb \
-    -e KOITO_ALLOWED_HOSTS=koito.example.com,192.168.0.100 \
-    -p 4110:4110 \
-    -v ./koito-data:/etc/koito \
-    --restart unless-stopped \
-    -d \
-    gabehf/koito:latest
-```
+
 Be sure to replace `secret_password` with a random password of your choice, and set `KOITO_ALLOWED_HOSTS` to include the domain name or IP address you will be accessing Koito 
 from when using either of the Docker methods described above.
 
 Those are the two required environment variables. You can find a full list of configuration options in the [configuration reference](/reference/configuration).
-
-When using `docker run`, you will also need to fill in the IP address of your postgres instance.
 
 :::caution
 Setting `KOITO_ALLOWED_HOSTS=*` will allow requests from any host, but this is not recommended as it introduces security vulnerabilities.
@@ -75,13 +47,15 @@ Setting `KOITO_ALLOWED_HOSTS=*` will allow requests from any host, but this is n
 
 If you don't want to use docker, you can also build the application from source.
 
-First, you need to install dependencies. Koito relies on `libvips-dev` to process images.
+First, you need to install dependencies. Koito relies on `make`, `yarn` for building the client, and `libvips-dev` to process images.
 
 ```sh
-sudo apt install libvips-dev
+sudo apt install libvips-dev make npm
+sudo npm install --global yarn
 ```
 
-If you aren't installing on an Ubuntu or Debian based system, you can find other ways to install `libvips-dev` on the [libvips wiki](https://github.com/libvips/libvips/wiki/)
+If you aren't installing on an Ubuntu or Debian based system, you can easily find ways to install make, npm, and yarn by googling, and
+you can find other ways to install `libvips-dev` on the [libvips wiki](https://github.com/libvips/libvips/wiki/).
 
 Then, clone the repository and execute the build command using the included Makefile:
 

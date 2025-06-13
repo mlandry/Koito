@@ -33,6 +33,9 @@ Koito is configured using **environment variables**. This is the full list of co
 ##### KOITO_MUSICBRAINZ_URL
 - Default: `https://musicbrainz.org`
 - Description: The URL Koito will use to contact MusicBrainz. Replace this value if you have your own MusicBrainz mirror.
+##### KOITO_MUSICBRAINZ_RATE_LIMIT
+- Default: `1`
+- Description: The number of requests to send to the MusicBrainz server per second. Unless you are using your own MusicBrainz mirror, __do not touch this value__.
 ##### KOITO_ENABLE_LBZ_RELAY
 - Default: `false`
 - Description: Set to `true` if you want to relay requests from the ListenBrainz endpoints on your Koito server to another ListenBrainz compatible server.
