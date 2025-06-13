@@ -66,3 +66,7 @@ Koito is configured using **environment variables**. This is the full list of co
 ##### KOITO_THROTTLE_IMPORTS_MS
 - Default: `0`
 - Description: The amount of time to wait, in milliseconds, between listen imports. Can help when running Koito on low-powered machines.
+##### KOITO_IMPORT_BEFORE_UNIX
+- Description: A unix timestamp. If an imported listen has a timestamp after this, it will be discarded.
+##### KOITO_IMPORT_AFTER_UNIX
+- Description: A unix timestamp. If an imported listen has a timestamp before this, it will be discarded.
