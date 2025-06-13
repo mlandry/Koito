@@ -8,6 +8,16 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   integrations: [
       starlight({
+        head: [
+          {
+            tag: 'script',
+            attrs: {
+              src: 'https://static.cloudflareinsights.com/beacon.min.js',
+              'data-cf-beacon': '{"token": "1948caaaba10463fa1d310ee02b0951c"}',
+              defer: true,
+            }
+          }
+        ],
           title: 'Koito',
           logo: {
             src: './src/assets/logo_text.png',
