@@ -1,19 +1,10 @@
 .PHONY: all test clean client
 
-db.up:
-	GOOSE_MIGRATION_DIR=db/migrations GOOSE_DRIVER=postgres GOOSE_DBSTRING=postgres://postgres:secret@localhost:5432 goose up
-
-db.down:
-	GOOSE_MIGRATION_DIR=db/migrations GOOSE_DRIVER=postgres GOOSE_DBSTRING=postgres://postgres:secret@localhost:5432 goose down
-
-db.reset:
-	GOOSE_MIGRATION_DIR=db/migrations GOOSE_DRIVER=postgres GOOSE_DBSTRING=postgres://postgres:secret@localhost:5432 goose down-to 0
-
-db.schemadump:
+postgres.schemadump:
 	docker run --rm --network=host --env PGPASSWORD=secret -v "./db:/tmp/dump" \
 	postgres pg_dump \
 	--schema-only \
-	--host=192.168.0.153 \
+	--host=localhost \
 	--port=5432 \
 	--username=postgres \
 	-v --dbname="koitodb" -f "/tmp/dump/schema.sql"
@@ -27,14 +18,14 @@ postgres.start:
 postgres.stop:
 	docker stop koito-db
 
-postgres.rm:
-	docker rm bamsort-db
-
 api.debug:
-	KOITO_ALLOWED_HOSTS=* KOITO_LOG_LEVEL=debug KOITO_CONFIG_DIR=test_config_dir KOITO_DATABASE_URL=postgres://postgres:secret@192.168.0.153:5432/koitodb?sslmode=disable go run cmd/api/main.go
+	KOITO_ALLOWED_HOSTS=* KOITO_LOG_LEVEL=debug KOITO_CONFIG_DIR=test_config_dir KOITO_DATABASE_URL=postgres://postgres:secret@localhost:5432?sslmode=disable go run cmd/api/main.go
 
 api.test:
 	go test ./... -timeout 60s
+
+api.build:
+	CGO_ENABLED=1 go build -ldflags='-s -w' -o koito ./cmd/api/main.go
 
 client.dev:
 	cd client && yarn run dev
@@ -46,3 +37,5 @@ client.build:
 	cd client && yarn run build
 
 test: api.test
+
+build: api.build client.build
