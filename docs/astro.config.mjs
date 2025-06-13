@@ -9,6 +9,10 @@ export default defineConfig({
   integrations: [
       starlight({
           title: 'Koito',
+          logo: {
+            src: './src/assets/logo_text.png',
+            replacesTitle: true,
+          },
           social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/gabehf/koito' }],
           sidebar: [
               {
