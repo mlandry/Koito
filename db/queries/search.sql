@@ -10,7 +10,7 @@ FROM (
         ROW_NUMBER() OVER (PARTITION BY a.id ORDER BY similarity(aa.alias, $1) DESC) AS rn
     FROM artist_aliases aa
     JOIN artists_with_name a ON aa.artist_id = a.id
-    WHERE similarity(aa.alias, $1) > 0.28
+    WHERE similarity(aa.alias, $1) > 0.22
 ) ranked
 WHERE rn = 1
 ORDER BY score DESC
@@ -60,7 +60,7 @@ FROM (
     FROM track_aliases ta
     JOIN tracks_with_title t ON ta.track_id = t.id
     JOIN releases r ON t.release_id = r.id
-    WHERE similarity(ta.alias, $1) > 0.28
+    WHERE similarity(ta.alias, $1) > 0.22
 ) ranked
 WHERE rn = 1
 ORDER BY score DESC, title
@@ -123,7 +123,7 @@ FROM (
         ROW_NUMBER() OVER (PARTITION BY r.id ORDER BY similarity(ra.alias, $1) DESC) AS rn
     FROM release_aliases ra
     JOIN releases_with_title r ON ra.release_id = r.id
-    WHERE similarity(ra.alias, $1) > 0.28
+    WHERE similarity(ra.alias, $1) > 0.22
 ) ranked
 WHERE rn = 1
 ORDER BY score DESC, title

@@ -19,7 +19,7 @@ func setupTestDataForSearch(t *testing.T) {
 	require.NoError(t, err)
 	err = store.Exec(context.Background(),
 		`INSERT INTO artist_aliases (artist_id, alias, source, is_primary) 
-			VALUES (1, 'Artist One With A Long Name', 'Testing', true),
+			VALUES (1, 'Artist One With A Really Long Name', 'Testing', true),
 				   (2, 'Artist Two', 'Testing', true)`)
 	require.NoError(t, err)
 
@@ -64,10 +64,10 @@ func TestSearchArtists(t *testing.T) {
 	setupTestDataForSearch(t)
 
 	// Search for "Artist One With A Long Name"
-	results, err := store.SearchArtists(ctx, "Artist One With A Long Name")
+	results, err := store.SearchArtists(ctx, "Artist One With A Really Long Name")
 	require.NoError(t, err)
 	require.Len(t, results, 1)
-	assert.Equal(t, "Artist One With A Long Name", results[0].Name)
+	assert.Equal(t, "Artist One With A Really Long Name", results[0].Name)
 
 	// Search for substring "Artist"
 	results, err = store.SearchArtists(ctx, "Arti")
