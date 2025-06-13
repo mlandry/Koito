@@ -17,6 +17,7 @@ func flattenListenCounts(items []db.ListenActivityItem) []int64 {
 	return ret
 }
 
+// TODO: This test has some inherent flakiness due to local time possibly crossing day boundaries with UTC
 func TestListenActivity(t *testing.T) {
 	truncateTestData(t)
 
@@ -130,8 +131,8 @@ func TestListenActivity(t *testing.T) {
 
 	err = store.Exec(context.Background(), `
 	INSERT INTO listens (user_id, track_id, listened_at)
-	VALUES (1, 1, DATE '2024-03-10'),
-	       (1, 2, DATE '2024-03-20')`)
+	VALUES (1, 1, TIMESTAMP WITH TIME ZONE '2024-03-10T12:00:00Z'),
+	       (1, 2, TIMESTAMP WITH TIME ZONE '2024-03-20T12:00:00Z')`)
 	require.NoError(t, err)
 
 	activity, err = store.GetListenActivity(ctx, db.ListenActivityOpts{
@@ -141,8 +142,9 @@ func TestListenActivity(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Len(t, activity, 31) // number of days in march
-	assert.EqualValues(t, 1, activity[8].Listens)
-	assert.EqualValues(t, 1, activity[18].Listens)
+	t.Log(activity)
+	assert.EqualValues(t, 1, activity[9].Listens)
+	assert.EqualValues(t, 1, activity[19].Listens)
 
 	// Truncate and insert listens associated with two different albums
 	err = store.Exec(context.Background(), `TRUNCATE TABLE listens RESTART IDENTITY`)
