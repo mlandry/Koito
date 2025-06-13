@@ -80,7 +80,7 @@ export default function Account() {
                 <input
                     name="koito-confirm-password"
                     type="password"
-                    placeholder="Confirm password"
+                    placeholder="Confirm new password"
                     className="w-full mx-auto fg bg rounded p-2"
                     value={confirmPw}
                     onChange={(e) => setConfirmPw(e.target.value)}
