@@ -1,0 +1,64 @@
+---
+title: Configuration
+description: The available configuration options when setting up Koito.
+---
+
+Koito is configured using **environment variables**. This is the full list of configuration options supported by Koito.
+
+##### KOITO_DATABASE_URL
+- Required: `true`
+- Description: A Postgres connection URI. See https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS for more information.
+##### KOITO_ALLOWED_HOSTS
+- Required: `true`
+- Description: A list of hosts to allow requests from. E.g. `koito.mydomain.com,192.168.0.100`.
+##### KOITO_DEFAULT_USERNAME
+- Default: `admin`
+- Description: The username for the user that is created on first startup. Only applies when running Koito for the first time.
+##### KOITO_DEFAULT_PASSWORD 
+- Default: `changeme`
+- Description: The password for the user that is created on first startup. Only applies when running Koito for the first time.
+##### KOITO_BIND_ADDR
+- Description: The address to bind to. The default blank value is equivalent to `0.0.0.0`.
+##### KOITO_LISTEN_PORT
+- Default: `:4110`
+- Description: The port Koito will listen on.
+##### KOITO_ENABLE_STRUCTURED_LOGGING
+- Description: When set to `true`, will log in JSON format.
+##### KOITO_ENABLE_FULL_IMAGE_CACHE
+- Default: `false`
+- Description: When set to `true`, will store the full size downloaded images, which can then be served under `/images/full`.
+##### KOITO_LOG_LEVEL
+- Default: `info`
+- Description: One of `debug | info | warn | error | fatal`
+##### KOITO_MUSICBRAINZ_URL
+- Default: `https://musicbrainz.org`
+- Description: The URL Koito will use to contact MusicBrainz. Replace this value if you have your own MusicBrainz mirror.
+##### KOITO_ENABLE_LBZ_RELAY
+- Default: `false`
+- Description: Set to `true` if you want to relay requests from the ListenBrainz endpoints on your Koito server to another ListenBrainz compatible server.
+##### KOITO_LBZ_RELAY_URL
+- Required: `true` if relays are enabled.
+- Description: The URL to which relayed requests will be sent to.    
+##### KOITO_LBZ_RELAY_TOKEN
+- Required: `true` if relays are enabled. 
+- Description: The user token to send with the relayed ListenBrainz requests.
+##### KOITO_CONFIG_DIR
+- Default: `/etc/koito`
+- Description: The location where import folders and image caches are stored.
+##### KOITO_DISABLE_DEEZER 
+- Default: `false`
+- Description: Disables Deezer as a source for finding artist and album images.
+##### KOITO_DISABLE_COVER_ART_ARCHIVE 
+- Default: `false`
+- Description: Disables Cover Art Archive as a source for finding album images.
+##### KOITO_DISABLE_MUSICBRAINZ
+- Default: `false`
+##### KOITO_SKIP_IMPORT
+- Default: `false`
+- Description: Skips running the importer on startup.
+##### KOITO_DISABLE_RATE_LIMIT
+- Default: `false`
+- Description: When enabled, disables the rate limiter that Koito has on the `/apis/web/v1/login` endpoint.
+##### KOITO_THROTTLE_IMPORTS_MS
+- Default: `0`
+- Description: The amount of time to wait, in milliseconds, between listen imports. Can help when running Koito on low-powered machines.

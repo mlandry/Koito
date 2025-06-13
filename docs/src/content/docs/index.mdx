@@ -1,36 +1,36 @@
 ---
-title: Home
-description: Get started building your docs site with Starlight.
+title: The modern, open source scrobbler
+description: Visualize your listening history with a modern, open source, ListenBrainz-compatible scrobbler.
 template: splash
 hero:
-  tagline: Congrats on setting up a new Starlight project!
+  tagline: Explore your listening patterns, track your favorite artists, and relay scrobbles to other sites — all from a fast, themeable server that you control.
   image:
-    file: ../../assets/houston.webp
+    file: ../../assets/out.webp
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: Get Started
+      link: /guides/installation/
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
+    - text: View a live instance
+      link: https://koito.mnrva.dev
       icon: external
       variant: minimal
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## Next steps
+## Features
 
 <CardGrid>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
+	<Card title="ListenBrainz compatible" icon="puzzle">
+		Koito can be connected to any music server or client that allows for custom ListenBrainz URLs.
 	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
+	<Card title="Scrobbler relay" icon="rocket">
+		Automatically relay listens submitted to your Koito instance to other ListenBrainz compatble servers.
 	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
+	<Card title="Automatic data fetching" icon="download">
+		Koito automatically fetches data from MusicBrainz and images from Deezer and Cover Art Archive to compliment what is provided by your music server.
 	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
+	<Card title="Themeable" icon="seti:css">
+		Koito ships with twelve different themes, with custom theme options to be added soon™.
 	</Card>
 </CardGrid>
