@@ -23,6 +23,7 @@ const (
 	ENABLE_FULL_IMAGE_CACHE_ENV   = "KOITO_ENABLE_FULL_IMAGE_CACHE"
 	LOG_LEVEL_ENV                 = "KOITO_LOG_LEVEL"
 	MUSICBRAINZ_URL_ENV           = "KOITO_MUSICBRAINZ_URL"
+	MUSICBRAINZ_RATE_LIMIT_ENV    = "KOITO_MUSICBRAINZ_RATE_LIMIT"
 	ENABLE_LBZ_RELAY_ENV          = "KOITO_ENABLE_LBZ_RELAY"
 	LBZ_RELAY_URL_ENV             = "KOITO_LBZ_RELAY_URL"
 	LBZ_RELAY_TOKEN_ENV           = "KOITO_LBZ_RELAY_TOKEN"
@@ -45,6 +46,7 @@ type config struct {
 	// baseUrl              string
 	databaseUrl          string
 	musicBrainzUrl       string
+	musicBrainzRateLimit int
 	logLevel             int
 	structuredLogging    bool
 	enableFullImageCache bool
@@ -94,6 +96,10 @@ func loadConfig(getenv func(string) string) (*config, error) {
 	cfg.listenPort, err = strconv.Atoi(getenv(LISTEN_PORT_ENV))
 	if err != nil {
 		cfg.listenPort = defaultListenPort
+	}
+	cfg.musicBrainzRateLimit, err = strconv.Atoi(getenv(MUSICBRAINZ_RATE_LIMIT_ENV))
+	if err != nil {
+		cfg.musicBrainzRateLimit = 1
 	}
 	cfg.musicBrainzUrl = getenv(MUSICBRAINZ_URL_ENV)
 	if cfg.musicBrainzUrl == "" {
@@ -190,6 +196,12 @@ func MusicBrainzUrl() string {
 	lock.RLock()
 	defer lock.RUnlock()
 	return globalConfig.musicBrainzUrl
+}
+
+func MusicBrainzRateLimit() int {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.musicBrainzRateLimit
 }
 
 func LogLevel() int {

@@ -38,7 +38,7 @@ func NewMusicBrainzClient() *MusicBrainzClient {
 	ret := new(MusicBrainzClient)
 	ret.url = cfg.MusicBrainzUrl()
 	ret.userAgent = "Koito/0.0.1 (contact@koito.app)"
-	ret.requestQueue = queue.NewRequestQueue(1, 1)
+	ret.requestQueue = queue.NewRequestQueue(cfg.MusicBrainzRateLimit(), cfg.MusicBrainzRateLimit())
 	return ret
 }
 
