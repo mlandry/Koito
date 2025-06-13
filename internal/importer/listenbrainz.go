@@ -78,6 +78,11 @@ func ImportListenBrainzFile(ctx context.Context, store db.DB, mbzc mbz.MusicBrai
 			fmt.Println("Error unmarshaling JSON:", err)
 			continue
 		}
+		ts := time.Unix(payload.ListenedAt, 0)
+		if !inImportTimeWindow(ts) {
+			l.Debug().Msgf("Skipping import due to import time rules")
+			continue
+		}
 		artistMbzIDs, err := utils.ParseUUIDSlice(payload.TrackMeta.AdditionalInfo.ArtistMBIDs)
 		if err != nil {
 			l.Debug().Err(err).Msg("Failed to parse one or more uuids")
@@ -119,7 +124,7 @@ func ImportListenBrainzFile(ctx context.Context, store db.DB, mbzc mbz.MusicBrai
 			ReleaseMbzID:      releaseMbzID,
 			ReleaseGroupMbzID: rgMbzID,
 			Duration:          duration,
-			Time:              time.Unix(payload.ListenedAt, 0),
+			Time:              ts,
 			UserID:            1,
 			Client:            client,
 		}

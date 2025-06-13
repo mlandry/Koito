@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -37,6 +38,8 @@ const (
 	ALLOWED_HOSTS_ENV             = "KOITO_ALLOWED_HOSTS"
 	DISABLE_RATE_LIMIT_ENV        = "KOITO_DISABLE_RATE_LIMIT"
 	THROTTLE_IMPORTS_MS           = "KOITO_THROTTLE_IMPORTS_MS"
+	IMPORT_BEFORE_UNIX_ENV        = "KOITO_IMPORT_BEFORE_UNIX"
+	IMPORT_AFTER_UNIX_ENV         = "KOITO_IMPORT_AFTER_UNIX"
 )
 
 type config struct {
@@ -64,6 +67,8 @@ type config struct {
 	disableRateLimit     bool
 	importThrottleMs     int
 	userAgent            string
+	importBefore         time.Time
+	importAfter          time.Time
 }
 
 var (
@@ -110,6 +115,16 @@ func loadConfig(getenv func(string) string) (*config, error) {
 		cfg.lbzRelayEnabled = true
 		cfg.lbzRelayToken = getenv(LBZ_RELAY_TOKEN_ENV)
 		cfg.lbzRelayUrl = getenv(LBZ_RELAY_URL_ENV)
+	}
+
+	beforeutx, _ := strconv.ParseInt(getenv(IMPORT_BEFORE_UNIX_ENV), 10, 64)
+	afterutx, _ := strconv.ParseInt(getenv(IMPORT_AFTER_UNIX_ENV), 10, 64)
+
+	if beforeutx > 0 {
+		cfg.importBefore = time.Unix(beforeutx, 0)
+	}
+	if afterutx > 0 {
+		cfg.importAfter = time.Unix(afterutx, 0)
 	}
 
 	cfg.importThrottleMs, _ = strconv.Atoi(getenv(THROTTLE_IMPORTS_MS))
@@ -307,4 +322,9 @@ func ThrottleImportMs() int {
 	lock.RLock()
 	defer lock.RUnlock()
 	return globalConfig.importThrottleMs
+}
+
+// returns the before, after times, in that order
+func ImportWindow() (time.Time, time.Time) {
+	return globalConfig.importBefore, globalConfig.importAfter
 }

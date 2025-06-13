@@ -43,8 +43,13 @@ func ImportSpotifyFile(ctx context.Context, store db.DB, filename string) error 
 	if err != nil {
 		return err
 	}
+
 	for _, item := range export {
 		if item.ReasonEnd != "trackdone" {
+			continue
+		}
+		if !inImportTimeWindow(item.Timestamp) {
+			l.Debug().Msgf("Skipping import due to import time rules")
 			continue
 		}
 		dur := item.MsPlayed
@@ -58,7 +63,7 @@ func ImportSpotifyFile(ctx context.Context, store db.DB, filename string) error 
 			TrackTitle:   item.TrackName,
 			ReleaseTitle: item.AlbumName,
 			Duration:     dur / 1000,
-			Time:         item.Timestamp.UTC(),
+			Time:         item.Timestamp,
 			UserID:       1,
 		}
 		err = catalog.SubmitListen(ctx, store, opts)

@@ -93,6 +93,10 @@ func ImportLastFMFile(ctx context.Context, store db.DB, mbzc mbz.MusicBrainzCall
 			} else {
 				ts = time.Unix(unix, 0).UTC()
 			}
+			if !inImportTimeWindow(ts) {
+				l.Debug().Msgf("Skipping import due to import time rules")
+				continue
+			}
 			opts := catalog.SubmitListenOpts{
 				MbzCaller:      mbzc,
 				Artist:         track.Artist.Text,
