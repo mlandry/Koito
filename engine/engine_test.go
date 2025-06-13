@@ -98,7 +98,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to database: %s", err)
 	}
 
-	go engine.Run(getenv, os.Stdout)
+	go engine.Run(getenv, os.Stdout, "vTest")
 
 	// Wait until the web server is reachable
 	for i := 0; i < 20; i++ {

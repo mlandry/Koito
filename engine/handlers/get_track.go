@@ -11,21 +11,35 @@ import (
 
 func GetTrackHandler(store db.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		l := logger.FromContext(r.Context())
+		ctx := r.Context()
+		l := logger.FromContext(ctx)
+
+		l.Debug().Msg("GetTrackHandler: Received request to retrieve track")
 
 		idStr := r.URL.Query().Get("id")
-		id, err := strconv.Atoi(idStr)
-		if err != nil {
-			utils.WriteError(w, "id is invalid", 400)
+		if idStr == "" {
+			l.Debug().Msg("GetTrackHandler: Missing track ID in request")
+			utils.WriteError(w, "id must be provided", http.StatusBadRequest)
 			return
 		}
 
-		track, err := store.GetTrack(r.Context(), db.GetTrackOpts{ID: int32(id)})
+		id, err := strconv.Atoi(idStr)
 		if err != nil {
-			l.Err(err).Msg("Failed to get top albums")
+			l.Debug().AnErr("error", err).Msg("GetTrackHandler: Invalid track ID")
+			utils.WriteError(w, "id is invalid", http.StatusBadRequest)
+			return
+		}
+
+		l.Debug().Msgf("GetTrackHandler: Retrieving track with ID %d", id)
+
+		track, err := store.GetTrack(ctx, db.GetTrackOpts{ID: int32(id)})
+		if err != nil {
+			l.Err(err).Msgf("GetTrackHandler: Failed to retrieve track with ID %d", id)
 			utils.WriteError(w, "track with specified id could not be found", http.StatusNotFound)
 			return
 		}
+
+		l.Debug().Msgf("GetTrackHandler: Successfully retrieved track with ID %d", id)
 		utils.WriteJSON(w, http.StatusOK, track)
 	}
 }

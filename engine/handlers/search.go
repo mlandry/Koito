@@ -21,6 +21,9 @@ func SearchHandler(store db.DB) http.HandlerFunc {
 		l := logger.FromContext(ctx)
 		q := r.URL.Query().Get("q")
 		artists, err := store.SearchArtists(ctx, q)
+
+		l.Debug().Msgf("SearchHandler: Received search with query: %s", r.URL.Query().Encode())
+
 		if err != nil {
 			l.Err(err).Msg("Failed to search for artists")
 			utils.WriteError(w, "failed to search in database", http.StatusInternalServerError)

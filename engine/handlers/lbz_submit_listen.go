@@ -13,7 +13,7 @@ import (
 	"github.com/gabehf/koito/internal/cfg"
 	"github.com/gabehf/koito/internal/db"
 	"github.com/gabehf/koito/internal/logger"
-	mbz "github.com/gabehf/koito/internal/mbz"
+	"github.com/gabehf/koito/internal/mbz"
 	"github.com/gabehf/koito/internal/utils"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -70,60 +70,63 @@ func LbzSubmitListenHandler(store db.DB, mbzc mbz.MusicBrainzCaller) func(w http
 	return func(w http.ResponseWriter, r *http.Request) {
 		l := logger.FromContext(r.Context())
 
+		l.Debug().Msg("LbzSubmitListenHandler: Received request to submit listens")
+
 		var req LbzSubmitListenRequest
 		requestBytes, err := io.ReadAll(r.Body)
 		if err != nil {
+			l.Err(err).Msg("LbzSubmitListenHandler: Failed to read request body")
 			utils.WriteError(w, "failed to read request body", http.StatusBadRequest)
 			return
 		}
 		if err := json.NewDecoder(bytes.NewBuffer(requestBytes)).Decode(&req); err != nil {
-			l.Debug().Err(err).Msg("Failed to decode request")
+			l.Err(err).Msg("LbzSubmitListenHandler: Failed to decode request")
 			utils.WriteError(w, "failed to decode request", http.StatusBadRequest)
 			return
 		}
 
 		u := middleware.GetUserFromContext(r.Context())
 		if u == nil {
+			l.Debug().Msg("LbzSubmitListenHandler: Unauthorized request (user context is nil)")
 			utils.WriteError(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		l.Debug().Any("request_body", req).Msg("Recieved request")
+		l.Debug().Any("request_body", req).Msg("LbzSubmitListenHandler: Parsed request body")
 
 		if len(req.Payload) < 1 {
-			l.Error().Msg("Payload is nil")
+			l.Debug().Msg("LbzSubmitListenHandler: Payload is empty")
 			utils.WriteError(w, "payload is nil", http.StatusBadRequest)
 			return
 		}
 
 		if len(req.Payload) > maxListensPerRequest {
-			l.Error().Msg("Payload exceeds max listens per request")
+			l.Debug().Msgf("LbzSubmitListenHandler: Payload exceeds max listens per request (%d > %d)", len(req.Payload), maxListensPerRequest)
 			utils.WriteError(w, "payload exceeds max listens per request", http.StatusBadRequest)
 			return
 		}
 
 		if len(req.Payload) != 1 && req.ListenType != "import" {
-			l.Error().Msg("Payload must only contain one listen for non-import requests")
+			l.Debug().Msg("LbzSubmitListenHandler: Payload must only contain one listen for non-import requests")
 			utils.WriteError(w, "payload must only contain one listen for non-import requests", http.StatusBadRequest)
 			return
 		}
 
 		for _, payload := range req.Payload {
-
 			if payload.TrackMeta.ArtistName == "" || payload.TrackMeta.TrackName == "" {
-				l.Error().Msg("Artist name or track name are missing, unable to process listen")
+				l.Debug().Msg("LbzSubmitListenHandler: Artist name or track name are missing")
 				utils.WriteError(w, "Artist name or track name are missing", http.StatusBadRequest)
 				return
 			}
 
 			if req.ListenType != ListenTypePlayingNow && req.ListenType != ListenTypeSingle && req.ListenType != ListenTypeImport {
-				l.Debug().Msg("No listen type provided, assuming 'single'")
+				l.Debug().Msg("LbzSubmitListenHandler: No listen type provided, assuming 'single'")
 				req.ListenType = "single"
 			}
 
 			artistMbzIDs, err := utils.ParseUUIDSlice(payload.TrackMeta.AdditionalInfo.ArtistMBIDs)
 			if err != nil {
-				l.Debug().Err(err).Msg("Failed to parse one or more uuids")
+				l.Debug().Err(err).Msg("LbzSubmitListenHandler: Failed to parse one or more UUIDs")
 			}
 			rgMbzID, err := uuid.Parse(payload.TrackMeta.AdditionalInfo.ReleaseGroupMBID)
 			if err != nil {
@@ -176,19 +179,23 @@ func LbzSubmitListenHandler(store db.DB, mbzc mbz.MusicBrainzCaller) func(w http
 			if req.ListenType == ListenTypePlayingNow {
 				opts.SkipSaveListen = true
 			}
+
 			_, err, shared := sfGroup.Do(buildCaolescingKey(payload), func() (interface{}, error) {
 				return 0, catalog.SubmitListen(r.Context(), store, opts)
 			})
 			if shared {
-				l.Info().Msg("Duplicate requests detected; results were coalesced")
+				l.Info().Msg("LbzSubmitListenHandler: Duplicate requests detected; results were coalesced")
 			}
 			if err != nil {
+				l.Err(err).Msg("LbzSubmitListenHandler: Failed to submit listen")
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write([]byte("{\"status\": \"internal server error\"}"))
+				return
 			}
 		}
 
+		l.Debug().Msg("LbzSubmitListenHandler: Successfully processed listens")
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte("{\"status\": \"ok\"}"))
@@ -196,14 +203,13 @@ func LbzSubmitListenHandler(store db.DB, mbzc mbz.MusicBrainzCaller) func(w http
 		if cfg.LbzRelayEnabled() {
 			go doLbzRelay(requestBytes, l)
 		}
-
 	}
 }
 
 func doLbzRelay(requestBytes []byte, l *zerolog.Logger) {
 	defer func() {
 		if r := recover(); r != nil {
-			l.Error().Interface("recover", r).Msg("Panic in doLbzRelay")
+			l.Error().Interface("recover", r).Msg("doLbzRelay: Panic occurred")
 		}
 	}()
 	const (
@@ -211,10 +217,10 @@ func doLbzRelay(requestBytes []byte, l *zerolog.Logger) {
 		initialBackoff   = 5 * time.Second
 		maxBackoff       = 40 * time.Second
 	)
+	l.Debug().Msg("doLbzRelay: Building ListenBrainz relay request")
 	req, err := http.NewRequest("POST", cfg.LbzRelayUrl()+"/submit-listens", bytes.NewBuffer(requestBytes))
 	if err != nil {
-		l.Error().Msg("Failed to build ListenBrainz relay request")
-		l.Error().Err(err).Send()
+		l.Err(err).Msg("doLbzRelay: Failed to build ListenBrainz relay request")
 		return
 	}
 	req.Header.Add("Authorization", "Token "+cfg.LbzRelayToken())
@@ -230,15 +236,16 @@ func doLbzRelay(requestBytes []byte, l *zerolog.Logger) {
 	backoff := initialBackoff
 
 	for {
+		l.Debug().Msg("doLbzRelay: Sending ListenBrainz relay request")
 		resp, err = client.Do(req)
 		if err != nil {
-			l.Err(err).Msg("Failed to send ListenBrainz relay request")
+			l.Err(err).Msg("doLbzRelay: Failed to send ListenBrainz relay request")
 			return
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			l.Info().Msg("Successfully relayed ListenBrainz submission")
+			l.Info().Msg("doLbzRelay: Successfully relayed ListenBrainz submission")
 			return
 		}
 
@@ -248,7 +255,7 @@ func doLbzRelay(requestBytes []byte, l *zerolog.Logger) {
 			l.Warn().
 				Int("status", resp.StatusCode).
 				Str("response", string(body)).
-				Msg("Retryable server error from ListenBrainz relay, retrying...")
+				Msg("doLbzRelay: Retryable server error from ListenBrainz relay, retrying...")
 			time.Sleep(backoff)
 			backoff *= 2
 			if backoff > maxBackoff {
@@ -257,11 +264,10 @@ func doLbzRelay(requestBytes []byte, l *zerolog.Logger) {
 			continue
 		}
 
-		// 4xx status or timeout exceeded
 		l.Warn().
 			Int("status", resp.StatusCode).
 			Str("response", string(body)).
-			Msg("Non-2XX response from ListenBrainz relay")
+			Msg("doLbzRelay: Non-2XX response from ListenBrainz relay")
 		return
 	}
 }

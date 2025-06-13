@@ -95,6 +95,7 @@ func SubmitListen(ctx context.Context, store db.DB, opts SubmitListenOpts) error
 		l.Error().Err(err).Msg("Failed to associate release group to listen")
 		return err
 	}
+	l.Debug().Any("album", rg).Msg("Matched listen to release")
 
 	// ensure artists are associated with release group
 	store.AddArtistsToAlbum(ctx, db.AddArtistsToAlbumOpts{
@@ -114,6 +115,7 @@ func SubmitListen(ctx context.Context, store db.DB, opts SubmitListenOpts) error
 		l.Error().Err(err).Msg("Failed to associate track to listen")
 		return err
 	}
+	l.Debug().Any("track", track).Msg("Matched listen to track")
 
 	if track.Duration == 0 && opts.Duration != 0 {
 		err := store.UpdateTrack(ctx, db.UpdateTrackOpts{
@@ -123,6 +125,7 @@ func SubmitListen(ctx context.Context, store db.DB, opts SubmitListenOpts) error
 		if err != nil {
 			l.Err(err).Msgf("Failed to update duration for track %s", track.Title)
 		}
+		l.Info().Msgf("Duration updated to %d for track '%s'", opts.Duration, track.Title)
 	}
 
 	if opts.SkipSaveListen {

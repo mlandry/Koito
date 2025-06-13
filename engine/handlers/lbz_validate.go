@@ -21,17 +21,20 @@ func LbzValidateTokenHandler(store db.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		l := logger.FromContext(ctx)
-		l.Debug().Msg("Validating user token...")
+
+		l.Debug().Msg("LbzValidateTokenHandler: Validating user token")
 
 		u := middleware.GetUserFromContext(ctx)
 		var response LbzValidateResponse
 		if u == nil {
+			l.Debug().Msg("LbzValidateTokenHandler: Invalid token, user not found in context")
 			response.Code = http.StatusUnauthorized
 			response.Error = "Incorrect Authorization"
 			w.WriteHeader(http.StatusUnauthorized)
 			utils.WriteJSON(w, http.StatusOK, response)
 		} else {
-			response.Code = 200
+			l.Debug().Msgf("LbzValidateTokenHandler: Token valid for user '%s'", u.Username)
+			response.Code = http.StatusOK
 			response.Message = "Token valid."
 			response.Valid = true
 			response.UserName = u.Username

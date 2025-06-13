@@ -23,14 +23,18 @@ func ImageHandler(store db.DB) http.HandlerFunc {
 		size := chi.URLParam(r, "size")
 		filename := chi.URLParam(r, "filename")
 
+		l.Debug().Msgf("ImageHandler: Received request to retrieve image with size '%s' and filename '%s'", size, filename)
+
 		imageSize, err := catalog.ParseImageSize(size)
 		if err != nil {
+			l.Debug().Msg("ImageHandler: Invalid image size parameter")
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
 		imgid, err := uuid.Parse(filename)
 		if err != nil {
+			l.Debug().Msg("ImageHandler: Invalid image filename, serving default image")
 			serveDefaultImage(w, r, imageSize)
 			return
 		}
@@ -38,60 +42,51 @@ func ImageHandler(store db.DB) http.HandlerFunc {
 		desiredImgPath := filepath.Join(cfg.ConfigDir(), catalog.ImageCacheDir, size, filepath.Clean(filename))
 
 		if _, err := os.Stat(desiredImgPath); os.IsNotExist(err) {
-			l.Debug().Msg("Image not found in desired size")
-			// file doesn't exist in desired size
+			l.Debug().Msg("ImageHandler: Image not found in desired size, attempting to retrieve source image")
 
 			fullSizePath := filepath.Join(cfg.ConfigDir(), catalog.ImageCacheDir, string(catalog.ImageSizeFull), filepath.Clean(filename))
 			largeSizePath := filepath.Join(cfg.ConfigDir(), catalog.ImageCacheDir, string(catalog.ImageSizeLarge), filepath.Clean(filename))
 
-			// check if file exists at either full or large size
-			// note: have to check both in case a user switched caching full size on and off
-			// which would result in cache misses from source changing
 			var sourcePath string
 			if _, err = os.Stat(fullSizePath); os.IsNotExist(err) {
 				if _, err = os.Stat(largeSizePath); os.IsNotExist(err) {
-					l.Warn().Msgf("Could not find requested image %s. If this image is tied to an album or artist, it should be replaced", imgid.String())
+					l.Warn().Msgf("ImageHandler: Could not find requested image %s. Serving default image", imgid.String())
 					serveDefaultImage(w, r, imageSize)
 					return
 				} else if err != nil {
-					// non-not found error for full file
-					l.Err(err).Msg("Failed to access source image file")
+					l.Err(err).Msg("ImageHandler: Failed to access source image file at large size")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 				sourcePath = largeSizePath
 			} else if err != nil {
-				// non-not found error for full file
-				l.Err(err).Msg("Failed to access source image file")
+				l.Err(err).Msg("ImageHandler: Failed to access source image file at full size")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			} else {
 				sourcePath = fullSizePath
 			}
 
-			// source size file was found
-
-			// create and cache image at desired size
+			l.Debug().Msgf("ImageHandler: Found source image file at path '%s'", sourcePath)
 
 			imageBuf, err := os.ReadFile(sourcePath)
 			if err != nil {
-				l.Err(err).Msg("Failed to read source image file")
+				l.Err(err).Msg("ImageHandler: Failed to read source image file")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
 			err = catalog.CompressAndSaveImage(r.Context(), imgid.String(), imageSize, bytes.NewReader(imageBuf))
 			if err != nil {
-				l.Err(err).Msg("Failed to save compressed image to cache")
+				l.Err(err).Msg("ImageHandler: Failed to save compressed image to cache")
 			}
 		} else if err != nil {
-			// non-not found error for desired file
-			l.Err(err).Msg("Failed to access desired image file")
+			l.Err(err).Msg("ImageHandler: Failed to access desired image file")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		// Serve image
+		l.Debug().Msgf("ImageHandler: Serving image from path '%s'", desiredImgPath)
 		http.ServeFile(w, r, desiredImgPath)
 	}
 }
@@ -99,15 +94,18 @@ func ImageHandler(store db.DB) http.HandlerFunc {
 func serveDefaultImage(w http.ResponseWriter, r *http.Request, size catalog.ImageSize) {
 	var lock sync.Mutex
 	l := logger.FromContext(r.Context())
+
+	l.Debug().Msgf("serveDefaultImage: Serving default image at size '%s'", size)
+
 	defaultImagePath := filepath.Join(cfg.ConfigDir(), catalog.ImageCacheDir, string(size), "default_img")
 	if _, err := os.Stat(defaultImagePath); os.IsNotExist(err) {
-		l.Debug().Msg("Default image does not exist in cache at desired size")
+		l.Debug().Msg("serveDefaultImage: Default image does not exist in cache at desired size")
 		defaultImagePath := filepath.Join(catalog.SourceImageDir(), "default_img")
 		if _, err = os.Stat(defaultImagePath); os.IsNotExist(err) {
-			l.Debug().Msg("Default image does not exist in cache, attempting to move...")
+			l.Debug().Msg("serveDefaultImage: Default image does not exist in source directory, attempting to move...")
 			err = os.MkdirAll(filepath.Dir(defaultImagePath), 0744)
 			if err != nil {
-				l.Err(err).Msg("Error when attempting to create image_cache/full dir")
+				l.Err(err).Msg("serveDefaultImage: Error when attempting to create image_cache/full directory")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -115,94 +113,29 @@ func serveDefaultImage(w http.ResponseWriter, r *http.Request, size catalog.Imag
 			utils.CopyFile(path.Join("assets", "default_img"), defaultImagePath)
 			lock.Unlock()
 		} else if err != nil {
-			// non-not found error
-			l.Error().Err(err).Msg("Error when attempting to read default image in cache")
+			l.Err(err).Msg("serveDefaultImage: Error when attempting to read default image in cache")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		// default_img does (or now does) exist in cache at full size
+
 		file, err := os.Open(path.Join(catalog.SourceImageDir(), "default_img"))
 		if err != nil {
-			l.Err(err).Msg("Error when reading default image from source dir")
+			l.Err(err).Msg("serveDefaultImage: Error when reading default image from source directory")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		err = catalog.CompressAndSaveImage(r.Context(), "default_img", size, file)
 		if err != nil {
-			l.Err(err).Msg("Error when caching default img at desired size")
+			l.Err(err).Msg("serveDefaultImage: Error when caching default image at desired size")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	} else if err != nil {
-		// non-not found error
-		l.Error().Err(err).Msg("Error when attempting to read default image in cache")
+		l.Err(err).Msg("serveDefaultImage: Error when attempting to read default image in cache")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	// serve default_img at desired size
+	l.Debug().Msgf("serveDefaultImage: Successfully serving default image at size '%s'", size)
 	http.ServeFile(w, r, path.Join(cfg.ConfigDir(), catalog.ImageCacheDir, string(size), "default_img"))
 }
-
-// func SearchMissingAlbumImagesHandler(store db.DB) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		ctx := r.Context()
-// 		l := logger.FromContext(ctx)
-// 		l.Info().Msg("Beginning search for albums with missing images")
-// 		go func() {
-// 			defer func() {
-// 				if r := recover(); r != nil {
-// 					l.Error().Interface("recover", r).Msg("Panic when searching for missing album images")
-// 				}
-// 			}()
-// 			ctx := logger.NewContext(l)
-// 			from := int32(0)
-// 			count := 0
-// 			for {
-// 				albums, err := store.AlbumsWithoutImages(ctx, from)
-// 				if errors.Is(err, pgx.ErrNoRows) {
-// 					break
-// 				} else if err != nil {
-// 					l.Err(err).Msg("Failed to search for missing images")
-// 					return
-// 				}
-// 				l.Debug().Msgf("Queried %d albums on page %d", len(albums), from)
-// 				if len(albums) < 1 {
-// 					break
-// 				}
-// 				for _, a := range albums {
-// 					l.Debug().Msgf("Searching images for album %s", a.Title)
-// 					img, err := imagesrc.GetAlbumImages(ctx, imagesrc.AlbumImageOpts{
-// 						Artists:      utils.FlattenSimpleArtistNames(a.Artists),
-// 						Album:        a.Title,
-// 						ReleaseMbzID: a.MbzID,
-// 					})
-// 					if err == nil && img != "" {
-// 						l.Debug().Msg("Image found! Downloading...")
-// 						imgid, err := catalog.DownloadAndCacheImage(ctx, img)
-// 						if err != nil {
-// 							l.Err(err).Msgf("Failed to download image for %s", a.Title)
-// 							continue
-// 						}
-// 						err = store.UpdateAlbum(ctx, db.UpdateAlbumOpts{
-// 							ID:    a.ID,
-// 							Image: imgid,
-// 						})
-// 						if err != nil {
-// 							l.Err(err).Msgf("Failed to update image for %s", a.Title)
-// 							continue
-// 						}
-// 						l.Info().Msgf("Found new album image for %s", a.Title)
-// 						count++
-// 					}
-// 					if err != nil {
-// 						l.Err(err).Msgf("Failed to get album images for %s", a.Title)
-// 					}
-// 				}
-// 				from = albums[len(albums)-1].ID
-// 			}
-// 			l.Info().Msgf("Completed search, finding %d new images", count)
-// 		}()
-// 		w.WriteHeader(http.StatusOK)
-// 	}
-// }

@@ -20,6 +20,9 @@ type StatsResponse struct {
 func StatsHandler(store db.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		l := logger.FromContext(r.Context())
+
+		l.Debug().Msg("StatsHandler: Received request to retrieve statistics")
+
 		var period db.Period
 		switch strings.ToLower(r.URL.Query().Get("period")) {
 		case "day":
@@ -33,39 +36,48 @@ func StatsHandler(store db.DB) http.HandlerFunc {
 		case "all_time":
 			period = db.PeriodAllTime
 		default:
-			l.Debug().Msgf("Using default value '%s' for period", db.PeriodDay)
+			l.Debug().Msgf("StatsHandler: Using default value '%s' for period", db.PeriodDay)
 			period = db.PeriodDay
 		}
+
+		l.Debug().Msgf("StatsHandler: Fetching statistics for period '%s'", period)
+
 		listens, err := store.CountListens(r.Context(), period)
 		if err != nil {
-			l.Err(err).Send()
+			l.Err(err).Msg("StatsHandler: Failed to fetch listen count")
 			utils.WriteError(w, "failed to get listens: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		tracks, err := store.CountTracks(r.Context(), period)
 		if err != nil {
-			l.Err(err).Send()
-			utils.WriteError(w, "failed to get listens: "+err.Error(), http.StatusInternalServerError)
+			l.Err(err).Msg("StatsHandler: Failed to fetch track count")
+			utils.WriteError(w, "failed to get tracks: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		albums, err := store.CountAlbums(r.Context(), period)
 		if err != nil {
-			l.Err(err).Send()
-			utils.WriteError(w, "failed to get listens: "+err.Error(), http.StatusInternalServerError)
+			l.Err(err).Msg("StatsHandler: Failed to fetch album count")
+			utils.WriteError(w, "failed to get albums: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		artists, err := store.CountArtists(r.Context(), period)
 		if err != nil {
-			l.Err(err).Send()
-			utils.WriteError(w, "failed to get listens: "+err.Error(), http.StatusInternalServerError)
+			l.Err(err).Msg("StatsHandler: Failed to fetch artist count")
+			utils.WriteError(w, "failed to get artists: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		timeListenedS, err := store.CountTimeListened(r.Context(), period)
 		if err != nil {
-			l.Err(err).Send()
-			utils.WriteError(w, "failed to get listens: "+err.Error(), http.StatusInternalServerError)
+			l.Err(err).Msg("StatsHandler: Failed to fetch time listened")
+			utils.WriteError(w, "failed to get time listened: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		l.Debug().Msg("StatsHandler: Successfully fetched statistics")
 		utils.WriteJSON(w, http.StatusOK, StatsResponse{
 			ListenCount:   listens,
 			TrackCount:    tracks,

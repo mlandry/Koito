@@ -10,14 +10,22 @@ import (
 
 func GetListensHandler(store db.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		l := logger.FromContext(r.Context())
+		ctx := r.Context()
+		l := logger.FromContext(ctx)
+
+		l.Debug().Msg("GetListensHandler: Received request to retrieve listens")
+
 		opts := OptsFromRequest(r)
-		listens, err := store.GetListensPaginated(r.Context(), opts)
+		l.Debug().Msgf("GetListensHandler: Retrieving listens with options: %+v", opts)
+
+		listens, err := store.GetListensPaginated(ctx, opts)
 		if err != nil {
-			l.Err(err).Send()
-			utils.WriteError(w, "failed to get listens: "+err.Error(), 400)
+			l.Err(err).Msg("GetListensHandler: Failed to retrieve listens")
+			utils.WriteError(w, "failed to get listens: "+err.Error(), http.StatusBadRequest)
 			return
 		}
+
+		l.Debug().Msg("GetListensHandler: Successfully retrieved listens")
 		utils.WriteJSON(w, http.StatusOK, listens)
 	}
 }

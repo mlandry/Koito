@@ -10,14 +10,22 @@ import (
 
 func GetTopTracksHandler(store db.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		l := logger.FromContext(r.Context())
+		ctx := r.Context()
+		l := logger.FromContext(ctx)
+
+		l.Debug().Msg("GetTopTracksHandler: Received request to retrieve top tracks")
+
 		opts := OptsFromRequest(r)
-		tracks, err := store.GetTopTracksPaginated(r.Context(), opts)
+		l.Debug().Msgf("GetTopTracksHandler: Retrieving top tracks with options: %+v", opts)
+
+		tracks, err := store.GetTopTracksPaginated(ctx, opts)
 		if err != nil {
-			l.Err(err).Msg("Failed to get top tracks")
-			utils.WriteError(w, "failed to get tracks", 400)
+			l.Err(err).Msg("GetTopTracksHandler: Failed to retrieve top tracks")
+			utils.WriteError(w, "failed to get tracks", http.StatusBadRequest)
 			return
 		}
+
+		l.Debug().Msg("GetTopTracksHandler: Successfully retrieved top tracks")
 		utils.WriteJSON(w, http.StatusOK, tracks)
 	}
 }

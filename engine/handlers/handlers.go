@@ -16,19 +16,23 @@ const maximumLimit = 500
 func OptsFromRequest(r *http.Request) db.GetItemsOpts {
 	l := logger.FromContext(r.Context())
 
+	l.Debug().Msg("OptsFromRequest: Parsing query parameters")
+
 	limitStr := r.URL.Query().Get("limit")
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil {
-		l.Debug().Msgf("query parameter 'limit' not specified, using default %d", defaultLimitSize)
+		l.Debug().Msgf("OptsFromRequest: Query parameter 'limit' not specified, using default %d", defaultLimitSize)
 		limit = defaultLimitSize
 	}
 	if limit > maximumLimit {
-		l.Debug().Msgf("limit must not be greater than %d, using default %d", maximumLimit, defaultLimitSize)
+		l.Debug().Msgf("OptsFromRequest: Limit exceeds maximum %d, using default %d", maximumLimit, defaultLimitSize)
 		limit = defaultLimitSize
 	}
+
 	pageStr := r.URL.Query().Get("page")
 	page, _ := strconv.Atoi(pageStr)
 	if page < 1 {
+		l.Debug().Msg("OptsFromRequest: Page parameter is less than 1, defaulting to 1")
 		page = 1
 	}
 
@@ -59,9 +63,12 @@ func OptsFromRequest(r *http.Request) db.GetItemsOpts {
 	case "all_time":
 		period = db.PeriodAllTime
 	default:
-		l.Debug().Msgf("Using default value '%s' for period", db.PeriodDay)
+		l.Debug().Msgf("OptsFromRequest: Using default value '%s' for period", db.PeriodDay)
 		period = db.PeriodDay
 	}
+
+	l.Debug().Msgf("OptsFromRequest: Parsed options: limit=%d, page=%d, week=%d, month=%d, year=%d, artist_id=%d, album_id=%d, track_id=%d, period=%s",
+		limit, page, week, month, year, artistId, albumId, trackId, period)
 
 	return db.GetItemsOpts{
 		Limit:    limit,

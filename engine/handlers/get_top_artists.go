@@ -10,14 +10,22 @@ import (
 
 func GetTopArtistsHandler(store db.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		l := logger.FromContext(r.Context())
+		ctx := r.Context()
+		l := logger.FromContext(ctx)
+
+		l.Debug().Msg("GetTopArtistsHandler: Received request to retrieve top artists")
+
 		opts := OptsFromRequest(r)
-		artists, err := store.GetTopArtistsPaginated(r.Context(), opts)
+		l.Debug().Msgf("GetTopArtistsHandler: Retrieving top artists with options: %+v", opts)
+
+		artists, err := store.GetTopArtistsPaginated(ctx, opts)
 		if err != nil {
-			l.Err(err).Msg("Failed to get top artists")
-			utils.WriteError(w, "failed to get artists", 400)
+			l.Err(err).Msg("GetTopArtistsHandler: Failed to retrieve top artists")
+			utils.WriteError(w, "failed to get artists", http.StatusBadRequest)
 			return
 		}
+
+		l.Debug().Msg("GetTopArtistsHandler: Successfully retrieved top artists")
 		utils.WriteJSON(w, http.StatusOK, artists)
 	}
 }
