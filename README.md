@@ -8,6 +8,10 @@ with Koito quite yet, you can [set up a relay](https://koito.io/guides/scrobbler
 scrobbler. This is what I've been doing for the entire development of this app and it hasn't failed me once. Or, you can always use something
 like [multi-scrobbler](https://github.com/FoxxMD/multi-scrobbler).
 
+## Demo
+
+You can view my public instance with my listening data at https://koito.mnrva.dev
+
 ## Screenshots
 
 ![screenshot one](assets/screenshot1.png)
@@ -25,7 +29,6 @@ services:
     container_name: koito
     depends_on:
       - db
-    user: 1000:1000
     environment:
       - KOITO_DATABASE_URL=postgres://postgres:secret_password@db:5432/koitodb
       - KOITO_ALLOWED_HOSTS=koito.example.com,192.168.0.100
