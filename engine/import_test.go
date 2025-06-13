@@ -38,6 +38,8 @@ func TestImportMaloja(t *testing.T) {
 	t.Log(a)
 	assert.Equal(t, "Magnify Tokyo", a.Name)
 	assert.EqualValues(t, 38, a.ListenCount)
+
+	truncateTestData(t)
 }
 
 func TestImportSpotify(t *testing.T) {
@@ -64,6 +66,8 @@ func TestImportSpotify(t *testing.T) {
 	// spotify includes duration data, but we only import when reason_end = trackdone
 	// this is the only track with valid duration data
 	assert.EqualValues(t, 181, track.Duration)
+
+	truncateTestData(t)
 }
 
 func TestImportLastFM(t *testing.T) {
@@ -109,6 +113,8 @@ func TestImportLastFM(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, listens.Items, 1)
 	assert.WithinDuration(t, time.Unix(1749776100, 0), listens.Items[0].Time, 1*time.Second)
+
+	truncateTestData(t)
 }
 
 func TestImportListenBrainz(t *testing.T) {
@@ -177,4 +183,6 @@ func TestImportListenBrainz(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, listens.Items, 1)
 	assert.WithinDuration(t, time.Unix(1749780612, 0), listens.Items[0].Time, 1*time.Second)
+
+	truncateTestData(t)
 }
