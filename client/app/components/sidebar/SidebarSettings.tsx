@@ -11,12 +11,20 @@ export default function SidebarSettings({ size }: Props) {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
-        const handleKeyDown= (e: KeyboardEvent) => {
-            if (e.key === '\\' && !open) {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const active = document.activeElement;
+            const isTyping = active && (
+                active.tagName === 'INPUT' ||
+                active.tagName === 'TEXTAREA' ||
+                (active as HTMLElement).isContentEditable
+            );
+    
+            if (!isTyping && e.key === '\\') {
                 e.preventDefault();
-                setOpen(true);
+                setOpen(!open);
             }
         };
+    
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [open]);

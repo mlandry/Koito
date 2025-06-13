@@ -57,7 +57,7 @@ export default function MergeModal(props: Props) {
         .then(r => {
             if (r.ok) {
                 if (mergeOrderReversed) {
-                    navigate(`/${props.type.toLowerCase()}/${mergeTarget}`)
+                    navigate(`/${props.type.toLowerCase()}/${mergeTarget.id}`)
                     closeMergeModal()
                 } else {
                     window.location.reload()

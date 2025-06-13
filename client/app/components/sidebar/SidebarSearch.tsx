@@ -12,11 +12,19 @@ export default function SidebarSearch({ size } : Props) {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === '/' && !open) {
+            const active = document.activeElement;
+            const isTyping = active && (
+                active.tagName === 'INPUT' ||
+                active.tagName === 'TEXTAREA' ||
+                (active as HTMLElement).isContentEditable
+            );
+    
+            if (!isTyping && e.key === '/') {
                 e.preventDefault();
-                setModalOpen(true);
+                setModalOpen(!open);
             }
         };
+    
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [open]);
