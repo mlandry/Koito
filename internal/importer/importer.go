@@ -22,6 +22,8 @@ func finishImport(ctx context.Context, filename string, numImported int) error {
 	if err != nil {
 		l.Err(err).Msg("Failed to move file to import_complete dir! Import files must be removed from the import directory manually, or else the importer will run on every app start")
 	}
-	l.Info().Msgf("Finished importing %s; imported %d items", filename, numImported)
+	if numImported != 0 {
+		l.Info().Msgf("Finished importing %s; imported %d items", filename, numImported)
+	}
 	return nil
 }

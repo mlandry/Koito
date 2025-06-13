@@ -48,6 +48,7 @@ func ImportLastFMFile(ctx context.Context, store db.DB, mbzc mbz.MusicBrainzCall
 		l.Err(err).Msgf("Failed to read import file: %s", filename)
 		return err
 	}
+	defer file.Close()
 	var throttleFunc = func() {}
 	if ms := cfg.ThrottleImportMs(); ms > 0 {
 		throttleFunc = func() {

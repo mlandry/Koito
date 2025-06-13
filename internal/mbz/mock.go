@@ -57,10 +57,14 @@ func (m *MbzMockCaller) GetTrack(ctx context.Context, id uuid.UUID) (*MusicBrain
 }
 
 func (m *MbzMockCaller) GetArtistPrimaryAliases(ctx context.Context, id uuid.UUID) ([]string, error) {
-	name := m.Artists[id].Name
-	ss := make([]string, len(m.Artists[id].Aliases)+1)
+	artist, exists := m.Artists[id]
+	if !exists {
+		return nil, fmt.Errorf("artist with ID %s not found", id)
+	}
+	name := artist.Name
+	ss := make([]string, len(artist.Aliases)+1)
 	ss[0] = name
-	for i, alias := range m.Artists[id].Aliases {
+	for i, alias := range artist.Aliases {
 		ss[i+1] = alias.Name
 	}
 	return ss, nil
