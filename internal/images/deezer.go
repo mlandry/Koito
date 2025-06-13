@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/gabehf/koito/internal/cfg"
 	"github.com/gabehf/koito/internal/logger"
 	"github.com/gabehf/koito/internal/utils"
 	"github.com/gabehf/koito/queue"
@@ -48,10 +49,10 @@ const (
 	artistImageEndpoint = "/search/artist?q=%s"
 )
 
-func NewDeezerClient(useragent string) *DeezerClient {
+func NewDeezerClient() *DeezerClient {
 	ret := new(DeezerClient)
 	ret.url = deezerBaseUrl
-	ret.userAgent = useragent
+	ret.userAgent = cfg.UserAgent()
 	ret.requestQueue = queue.NewRequestQueue(1, 1)
 	return ret
 }

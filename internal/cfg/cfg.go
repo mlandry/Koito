@@ -63,6 +63,7 @@ type config struct {
 	allowAllHosts        bool
 	disableRateLimit     bool
 	importThrottleMs     int
+	userAgent            string
 }
 
 var (
@@ -123,6 +124,8 @@ func loadConfig(getenv func(string) string) (*config, error) {
 	cfg.disableMusicBrainz = parseBool(getenv(DISABLE_MUSICBRAINZ_ENV))
 	cfg.skipImport = parseBool(getenv(SKIP_IMPORT_ENV))
 
+	cfg.userAgent = "Koito v0.0.1 (contact@koito.io)"
+
 	if getenv(DEFAULT_USERNAME_ENV) == "" {
 		cfg.defaultUsername = "admin"
 	} else {
@@ -167,6 +170,12 @@ func parseBool(s string) bool {
 }
 
 // Global accessors for configuration values
+
+func UserAgent() string {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.userAgent
+}
 
 func ListenAddr() string {
 	lock.RLock()

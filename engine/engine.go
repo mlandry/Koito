@@ -96,7 +96,7 @@ func Run(
 	}
 
 	images.Initialize(images.ImageSourceOpts{
-		UserAgent:    "Koito v0.0.1 (contact@koito.app)",
+		UserAgent:    cfg.UserAgent(),
 		EnableCAA:    !cfg.CoverArtArchiveDisabled(),
 		EnableDeezer: !cfg.DeezerDisabled(),
 	})

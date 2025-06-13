@@ -46,7 +46,7 @@ func Initialize(opts ImageSourceOpts) {
 		}
 		if opts.EnableDeezer {
 			imgsrc.deezerEnabled = true
-			imgsrc.deezerC = NewDeezerClient(opts.UserAgent)
+			imgsrc.deezerC = NewDeezerClient()
 		}
 	})
 }
