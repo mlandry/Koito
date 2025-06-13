@@ -3,6 +3,7 @@ package engine_test
 import (
 	"context"
 	"os"
+	"path"
 	"path/filepath"
 	"testing"
 	"time"
@@ -19,7 +20,7 @@ import (
 
 func TestImportMaloja(t *testing.T) {
 
-	src := "../static/maloja_import_test.json"
+	src := path.Join("..", "test_assets", "maloja_import_test.json")
 	destDir := filepath.Join(cfg.ConfigDir(), "import")
 	dest := filepath.Join(destDir, "maloja_import_test.json")
 
@@ -44,7 +45,7 @@ func TestImportMaloja(t *testing.T) {
 
 func TestImportSpotify(t *testing.T) {
 
-	src := "../static/Streaming_History_Audio_spotify_import_test.json"
+	src := path.Join("..", "test_assets", "Streaming_History_Audio_spotify_import_test.json")
 	destDir := filepath.Join(cfg.ConfigDir(), "import")
 	dest := filepath.Join(destDir, "Streaming_History_Audio_spotify_import_test.json")
 
@@ -72,7 +73,7 @@ func TestImportSpotify(t *testing.T) {
 
 func TestImportLastFM(t *testing.T) {
 
-	src := "../static/recenttracks-shoko2-1749776100.json"
+	src := path.Join("..", "test_assets", "recenttracks-shoko2-1749776100.json")
 	destDir := filepath.Join(cfg.ConfigDir(), "import")
 	dest := filepath.Join(destDir, "recenttracks-shoko2-1749776100.json")
 
@@ -119,7 +120,7 @@ func TestImportLastFM(t *testing.T) {
 
 func TestImportListenBrainz(t *testing.T) {
 
-	src := "../static/listenbrainz_shoko1_1749780844.zip"
+	src := path.Join("..", "test_assets", "listenbrainz_shoko1_1749780844.zip")
 	destDir := filepath.Join(cfg.ConfigDir(), "import")
 	dest := filepath.Join(destDir, "listenbrainz_shoko1_1749780844.zip")
 

@@ -664,9 +664,9 @@ func TestArtistReplaceImage(t *testing.T) {
 	buf := &bytes.Buffer{}
 	mpw := multipart.NewWriter(buf)
 	mpw.WriteField("artist_id", "1")
-	w, err := mpw.CreateFormFile("image", path.Join("..", "static", "yuu.jpg"))
+	w, err := mpw.CreateFormFile("image", path.Join("..", "test_assets", "yuu.jpg"))
 	require.NoError(t, err)
-	f, err := os.Open(path.Join("..", "static", "yuu.jpg"))
+	f, err := os.Open(path.Join("..", "test_assets", "yuu.jpg"))
 	require.NoError(t, err)
 	defer f.Close()
 	_, err = io.Copy(w, f)
@@ -702,9 +702,9 @@ func TestAlbumReplaceImage(t *testing.T) {
 	buf := &bytes.Buffer{}
 	mpw := multipart.NewWriter(buf)
 	mpw.WriteField("album_id", "1")
-	w, err := mpw.CreateFormFile("image", path.Join("..", "static", "yuu.jpg"))
+	w, err := mpw.CreateFormFile("image", path.Join("..", "test_assets", "yuu.jpg"))
 	require.NoError(t, err)
-	f, err := os.Open(path.Join("..", "static", "yuu.jpg"))
+	f, err := os.Open(path.Join("..", "test_assets", "yuu.jpg"))
 	require.NoError(t, err)
 	defer f.Close()
 	_, err = io.Copy(w, f)

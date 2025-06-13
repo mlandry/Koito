@@ -18,7 +18,7 @@ import (
 func TestImageLifecycle(t *testing.T) {
 
 	// serve yuu.jpg as test image
-	imageBytes, err := os.ReadFile(filepath.Join("static", "yuu.jpg"))
+	imageBytes, err := os.ReadFile(filepath.Join("test_assets", "yuu.jpg"))
 	require.NoError(t, err)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/jpeg")
