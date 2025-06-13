@@ -207,9 +207,9 @@ func doLbzRelay(requestBytes []byte, l *zerolog.Logger) {
 		}
 	}()
 	const (
-		maxRetryDuration = 10 * time.Second
-		initialBackoff   = 1 * time.Second
-		maxBackoff       = 4 * time.Second
+		maxRetryDuration = 3 * time.Minute
+		initialBackoff   = 5 * time.Second
+		maxBackoff       = 40 * time.Second
 	)
 	req, err := http.NewRequest("POST", cfg.LbzRelayUrl()+"/submit-listens", bytes.NewBuffer(requestBytes))
 	if err != nil {
@@ -221,7 +221,7 @@ func doLbzRelay(requestBytes []byte, l *zerolog.Logger) {
 	req.Header.Add("Content-Type", "application/json")
 
 	client := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 30 * time.Second,
 	}
 
 	var resp *http.Response
