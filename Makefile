@@ -33,7 +33,10 @@ client.dev:
 docs.dev:
 	cd docs && yarn dev
 
-client.build:
+client.deps: 
+	cd client && yarn install
+
+client.build: client.deps
 	cd client && yarn run build
 
 test: api.test
