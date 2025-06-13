@@ -163,7 +163,7 @@ func Run(
 	// Import
 	if !cfg.SkipImport() {
 		go func() {
-			RunImporter(l, store)
+			RunImporter(l, store, mbzC)
 		}()
 	}
 
@@ -186,7 +186,7 @@ func Run(
 	return nil
 }
 
-func RunImporter(l *zerolog.Logger, store db.DB) {
+func RunImporter(l *zerolog.Logger, store db.DB, mbzc mbz.MusicBrainzCaller) {
 	l.Debug().Msg("Checking for import files...")
 	files, err := os.ReadDir(path.Join(cfg.ConfigDir(), "import"))
 	if err != nil {
@@ -215,6 +215,12 @@ func RunImporter(l *zerolog.Logger, store db.DB) {
 		} else if strings.Contains(file.Name(), "maloja") {
 			l.Info().Msgf("Import file %s detecting as being Maloja export", file.Name())
 			err := importer.ImportMalojaFile(logger.NewContext(l), store, file.Name())
+			if err != nil {
+				l.Err(err).Msgf("Failed to import file: %s", file.Name())
+			}
+		} else if strings.Contains(file.Name(), "recenttracks") {
+			l.Info().Msgf("Import file %s detecting as being ghan.nl LastFM export", file.Name())
+			err := importer.ImportLastFMFile(logger.NewContext(l), store, mbzc, file.Name())
 			if err != nil {
 				l.Err(err).Msgf("Failed to import file: %s", file.Name())
 			}
