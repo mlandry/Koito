@@ -35,6 +35,8 @@ export default defineConfig({
       }),
 	],
 
+  site: "https://koito.io",
+
   vite: {
     plugins: [tailwindcss()],
   },
