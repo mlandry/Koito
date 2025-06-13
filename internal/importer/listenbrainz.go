@@ -22,12 +22,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// first, unzip zip file with name "listenbrainz_username_unix.zip"
-// then, enter the listens folder
-// then, recursively traverse all files in folder
-// then, import all .jsonl files found in folders
-// then, cleanup folder recursively
-// finally, move zip to complete dir
 func ImportListenBrainzExport(ctx context.Context, store db.DB, mbzc mbz.MusicBrainzCaller, filename string) error {
 	l := logger.FromContext(ctx)
 

@@ -58,7 +58,7 @@ func ImportSpotifyFile(ctx context.Context, store db.DB, filename string) error 
 			TrackTitle:   item.TrackName,
 			ReleaseTitle: item.AlbumName,
 			Duration:     dur / 1000,
-			Time:         item.Timestamp,
+			Time:         item.Timestamp.UTC(),
 			UserID:       1,
 		}
 		err = catalog.SubmitListen(ctx, store, opts)

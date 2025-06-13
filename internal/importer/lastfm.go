@@ -88,7 +88,7 @@ func ImportLastFMFile(ctx context.Context, store db.DB, mbzc mbz.MusicBrainzCall
 			if err != nil {
 				ts, err = time.Parse("02 Jan 2006, 15:04", track.Date.Text)
 				if err != nil {
-					ts = time.Now()
+					ts = time.Now().UTC()
 				}
 			} else {
 				ts = time.Unix(unix, 0).UTC()
