@@ -21,7 +21,7 @@ export default function LastPlays(props: Props) {
 
     if (isPending) {
         return (
-            <div className="w-[500px]">
+            <div className="w-[400px] sm:w-[500px]">
                 <h2>Last Played</h2>
                 <p>Loading...</p>
             </div>
@@ -43,8 +43,8 @@ export default function LastPlays(props: Props) {
                 <tbody>
                 {data.items.map((item) => (
                     <tr key={`last_listen_${item.time}`}>
-                        <td className="color-fg-tertiary pr-4 text-sm" title={new Date(item.time).toString()}>{timeSince(new Date(item.time))}</td>
-                        <td className="text-ellipsis overflow-hidden max-w-[600px]">
+                        <td className="color-fg-tertiary pr-2 sm:pr-4 text-sm whitespace-nowrap w-0" title={new Date(item.time).toString()}>{timeSince(new Date(item.time))}</td>
+                        <td className="text-ellipsis overflow-hidden max-w-[400px] sm:max-w-[600px]">
                             {props.hideArtists ? <></> : <><ArtistLinks artists={item.track.artists} /> - </>}
                             <Link className="hover:text-(--color-fg-secondary)" to={`/track/${item.track.id}`}>{item.track.title}</Link>
                         </td>

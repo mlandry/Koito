@@ -36,6 +36,7 @@ const (
 	DISABLE_MUSICBRAINZ_ENV       = "KOITO_DISABLE_MUSICBRAINZ"
 	SKIP_IMPORT_ENV               = "KOITO_SKIP_IMPORT"
 	ALLOWED_HOSTS_ENV             = "KOITO_ALLOWED_HOSTS"
+	CORS_ORIGINS_ENV              = "KOITO_CORS_ALLOWED_ORIGINS"
 	DISABLE_RATE_LIMIT_ENV        = "KOITO_DISABLE_RATE_LIMIT"
 	THROTTLE_IMPORTS_MS           = "KOITO_THROTTLE_IMPORTS_MS"
 	IMPORT_BEFORE_UNIX_ENV        = "KOITO_IMPORT_BEFORE_UNIX"
@@ -64,6 +65,7 @@ type config struct {
 	skipImport           bool
 	allowedHosts         []string
 	allowAllHosts        bool
+	allowedOrigins       []string
 	disableRateLimit     bool
 	importThrottleMs     int
 	userAgent            string
@@ -78,21 +80,18 @@ var (
 )
 
 // Initialize initializes the global configuration using the provided getenv function.
-func Load(getenv func(string) string) error {
+func Load(getenv func(string) string, version string) error {
 	var err error
 	once.Do(func() {
-		globalConfig, err = loadConfig(getenv)
+		globalConfig, err = loadConfig(getenv, version)
 	})
 	return err
 }
 
 // loadConfig loads the configuration from environment variables.
-func loadConfig(getenv func(string) string) (*config, error) {
+func loadConfig(getenv func(string) string, version string) (*config, error) {
 	cfg := new(config)
-	// cfg.baseUrl = getenv(BASE_URL_ENV)
-	// if cfg.baseUrl == "" {
-	// 	cfg.baseUrl = defaultBaseUrl
-	// }
+
 	cfg.databaseUrl = getenv(DATABASE_URL_ENV)
 	if cfg.databaseUrl == "" {
 		return nil, errors.New("required parameter " + DATABASE_URL_ENV + " not provided")
@@ -139,7 +138,7 @@ func loadConfig(getenv func(string) string) (*config, error) {
 	cfg.disableMusicBrainz = parseBool(getenv(DISABLE_MUSICBRAINZ_ENV))
 	cfg.skipImport = parseBool(getenv(SKIP_IMPORT_ENV))
 
-	cfg.userAgent = "Koito v0.0.1 (contact@koito.io)"
+	cfg.userAgent = fmt.Sprintf("Koito %s (contact@koito.io)", version)
 
 	if getenv(DEFAULT_USERNAME_ENV) == "" {
 		cfg.defaultUsername = "admin"
@@ -160,6 +159,9 @@ func loadConfig(getenv func(string) string) (*config, error) {
 	rawHosts := getenv(ALLOWED_HOSTS_ENV)
 	cfg.allowedHosts = strings.Split(rawHosts, ",")
 	cfg.allowAllHosts = cfg.allowedHosts[0] == "*"
+
+	rawCors := getenv(CORS_ORIGINS_ENV)
+	cfg.allowedOrigins = strings.Split(rawCors, ",")
 
 	switch strings.ToLower(getenv(LOG_LEVEL_ENV)) {
 	case "debug":
@@ -310,6 +312,12 @@ func AllowAllHosts() bool {
 	lock.RLock()
 	defer lock.RUnlock()
 	return globalConfig.allowAllHosts
+}
+
+func AllowedOrigins() []string {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.allowedOrigins
 }
 
 func RateLimitDisabled() bool {

@@ -12,8 +12,8 @@ export default function ThemeOption({ theme, setTheme }: Props) {
     }
 
     return (
-        <div onClick={() => setTheme(theme.name)} className="rounded-md p-5 hover:cursor-pointer flex gap-4 items-center border-2" style={{background: theme.bg, color: theme.fg, borderColor: theme.bgSecondary}}>
-            {capitalizeFirstLetter(theme.name)}
+        <div onClick={() => setTheme(theme.name)} className="rounded-md p-3 sm:p-5 hover:cursor-pointer flex gap-4 items-center border-2" style={{background: theme.bg, color: theme.fg, borderColor: theme.bgSecondary}}>
+            <div className="text-xs sm:text-sm">{capitalizeFirstLetter(theme.name)}</div>
             <div className="w-[50px] h-[30px] rounded-md" style={{background: theme.bgSecondary}}></div>
             <div className="w-[50px] h-[30px] rounded-md" style={{background: theme.fgSecondary}}></div>
             <div className="w-[50px] h-[30px] rounded-md" style={{background: theme.primary}}></div>

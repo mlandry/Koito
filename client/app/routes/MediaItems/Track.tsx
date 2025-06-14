@@ -50,9 +50,9 @@ export default function Track() {
             <div className="mt-10">
                 <PeriodSelector setter={setPeriod} current={period} />
             </div>
-            <div className="flex gap-20 mt-10">
-            <LastPlays limit={20} trackId={track.id}/>
-            <ActivityGrid trackId={track.id} configurable autoAdjust />
+            <div className="flex flex-wrap gap-20 mt-10">
+                <LastPlays limit={20} trackId={track.id}/>
+                <ActivityGrid trackId={track.id} configurable autoAdjust />
             </div>
         </MediaLayout>
     )

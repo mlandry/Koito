@@ -65,12 +65,12 @@ export default function App() {
         <AppProvider>
             <ThemeProvider theme={theme}>
             <QueryClientProvider client={queryClient}>
-                <div className="flex">
-                <Sidebar />
-                <div className="flex flex-col items-center mx-auto w-full">
-                    <Outlet />
-                    <Footer />
-                </div>
+                <div className="flex-col flex sm:flex-row">
+                  <Sidebar />
+                  <div className="flex flex-col items-center mx-auto w-full">
+                      <Outlet />
+                      <Footer />
+                  </div>
                 </div>
             </QueryClientProvider>
             </ThemeProvider>
@@ -117,7 +117,7 @@ export function ErrorBoundary() {
                     <div className="w-full flex flex-col">
                         <main className="pt-16 p-4 container mx-auto flex-grow">
                             <div className="flex gap-4 items-end">
-                                <img className="w-[200px] rounded" src="../public/yuu.jpg" />
+                                <img className="w-[200px] rounded" src="../yuu.jpg" />
                                 <div>
                                     <h1>{message}</h1>
                                     <p>{details}</p>

@@ -198,6 +198,13 @@ func TestTrackAliases(t *testing.T) {
 	err = store.SetPrimaryTrackAlias(ctx, 1, "Fake Alias")
 	require.Error(t, err)
 
+	// Ensure primary alias cannot be deleted
+	err = store.DeleteTrackAlias(ctx, track.ID, "Alias One")
+	require.NoError(t, err) // shouldn't error when nothing is deleted
+	track, err = store.GetTrack(ctx, db.GetTrackOpts{ID: 1})
+	require.NoError(t, err)
+	assert.Equal(t, "Alias One", track.Title)
+
 	store.SetPrimaryTrackAlias(ctx, 1, "Track One")
 }
 

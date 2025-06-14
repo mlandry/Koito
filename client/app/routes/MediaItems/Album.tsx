@@ -47,7 +47,7 @@ export default function Album() {
         <div className="mt-10">
             <PeriodSelector setter={setPeriod} current={period} />
         </div>
-        <div className="flex gap-20 mt-10">
+        <div className="flex flex-wrap gap-20 mt-10">
             <LastPlays limit={30} albumId={album.id} />
             <TopTracks limit={12} period={period} albumId={album.id} />
             <ActivityGrid autoAdjust configurable albumId={album.id} />

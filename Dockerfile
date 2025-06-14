@@ -1,14 +1,21 @@
 FROM node AS frontend
 
+ARG KOITO_VERSION
+ENV VITE_KOITO_VERSION=$KOITO_VERSION
+ENV BUILD_TARGET=docker
+
 WORKDIR /client
 COPY ./client/package.json ./client/yarn.lock ./
 RUN yarn install
 COPY ./client .
-ENV BUILD_TARGET=docker
+
 RUN yarn run build
 
-
 FROM golang:1.23 AS backend
+
+ARG KOITO_VERSION
+ENV CGO_ENABLED=1
+ENV GOOS=linux
 
 WORKDIR /app
 
@@ -21,7 +28,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=1 GOOS=linux go build -o app ./cmd/api
+RUN go build -ldflags "-X main.Version=$KOITO_VERSION" -o app ./cmd/api
 
 
 FROM debian:bookworm-slim AS final

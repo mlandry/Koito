@@ -25,12 +25,12 @@ func GetAliasesHandler(store db.DB) http.HandlerFunc {
 		trackIDStr := r.URL.Query().Get("track_id")
 
 		if artistIDStr == "" && albumIDStr == "" && trackIDStr == "" {
-			l.Debug().Msgf("Request is missing required parameters")
+			l.Debug().Msgf("GetAliasesHandler: Request is missing required parameters")
 			utils.WriteError(w, "artist_id, album_id, or track_id must be provided", http.StatusBadRequest)
 			return
 		}
 		if utils.MoreThanOneString(artistIDStr, albumIDStr, trackIDStr) {
-			l.Debug().Msgf("Request is has more than one of artist_id, album_id, and track_id")
+			l.Debug().Msgf("GetAliasesHandler: Request is has more than one of artist_id, album_id, and track_id")
 			utils.WriteError(w, "only one of artist_id, album_id, or track_id can be provided at a time", http.StatusBadRequest)
 			return
 		}
@@ -97,12 +97,12 @@ func DeleteAliasHandler(store db.DB) http.HandlerFunc {
 		alias := r.URL.Query().Get("alias")
 
 		if alias == "" || (artistIDStr == "" && albumIDStr == "" && trackIDStr == "") {
-			l.Debug().Msgf("Request is missing required parameters")
+			l.Debug().Msgf("DeleteAliasHandler: Request is missing required parameters")
 			utils.WriteError(w, "alias and artist_id, album_id, or track_id must be provided", http.StatusBadRequest)
 			return
 		}
 		if utils.MoreThanOneString(artistIDStr, albumIDStr, trackIDStr) {
-			l.Debug().Msgf("Request is has more than one of artist_id, album_id, and track_id")
+			l.Debug().Msgf("DeleteAliasHandler: Request is has more than one of artist_id, album_id, and track_id")
 			utils.WriteError(w, "only one of artist_id, album_id, or track_id can be provided at a time", http.StatusBadRequest)
 			return
 		}
@@ -177,12 +177,12 @@ func CreateAliasHandler(store db.DB) http.HandlerFunc {
 		trackIDStr := r.URL.Query().Get("track_id")
 
 		if alias == "" || (artistIDStr == "" && albumIDStr == "" && trackIDStr == "") {
-			l.Debug().Msgf("Request is missing required parameters")
+			l.Debug().Msgf("CreateAliasHandler: Request is missing required parameters")
 			utils.WriteError(w, "alias and artist_id, album_id, or track_id must be provided", http.StatusBadRequest)
 			return
 		}
 		if utils.MoreThanOneString(artistIDStr, albumIDStr, trackIDStr) {
-			l.Debug().Msgf("Request is has more than one of artist_id, album_id, and track_id")
+			l.Debug().Msgf("CreateAliasHandler: Request is has more than one of artist_id, album_id, and track_id")
 			utils.WriteError(w, "only one of artist_id, album_id, or track_id can be provided at a time", http.StatusBadRequest)
 			return
 		}
@@ -247,12 +247,12 @@ func SetPrimaryAliasHandler(store db.DB) http.HandlerFunc {
 		alias := r.URL.Query().Get("alias")
 
 		if alias == "" || (artistIDStr == "" && albumIDStr == "" && trackIDStr == "") {
-			l.Debug().Msgf("Request is missing required parameters")
+			l.Debug().Msgf("SetPrimaryAliasHandler: Request is missing required parameters")
 			utils.WriteError(w, "alias and artist_id, album_id, or track_id must be provided", http.StatusBadRequest)
 			return
 		}
 		if utils.MoreThanOneString(artistIDStr, albumIDStr, trackIDStr) {
-			l.Debug().Msgf("Request is has more than one of artist_id, album_id, and track_id")
+			l.Debug().Msgf("SetPrimaryAliasHandler: Request is has more than one of artist_id, album_id, and track_id")
 			utils.WriteError(w, "only one of artist_id, album_id, or track_id can be provided at a time", http.StatusBadRequest)
 			return
 		}

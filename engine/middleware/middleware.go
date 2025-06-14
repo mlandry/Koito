@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"net/http"
 	"runtime/debug"
@@ -63,9 +64,21 @@ func Logger(baseLogger *zerolog.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			reqID := GetRequestID(r.Context())
-			l := baseLogger.With().Str("request_id", reqID).Logger()
 
-			// Inject logger with request_id into the context
+			loggerCtx := baseLogger.With().Str("request_id", reqID)
+
+			for key, values := range r.URL.Query() {
+				if strings.Contains(strings.ToLower(key), "password") {
+					continue
+				}
+				if len(values) > 0 {
+					loggerCtx = loggerCtx.Str(fmt.Sprintf("query.%s", key), values[0])
+				}
+			}
+
+			l := loggerCtx.Logger()
+
+			// Inject logger into context
 			r = logger.Inject(r, &l)
 
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
@@ -82,20 +95,18 @@ func Logger(baseLogger *zerolog.Logger) func(next http.Handler) http.Handler {
 					utils.WriteError(ww, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
-				pathS := strings.Split(r.URL.Path, "/")
-				if len(pathS) > 1 && pathS[1] == "apis" {
-					l.Info().
-						Str("type", "access").
-						Timestamp().
-						Msgf("Received %s %s - Responded with %d in %.2fms", r.Method, r.URL.Path, ww.Status(), float64(t2.Sub(t1).Nanoseconds())/1_000_000.0)
-				} else {
-					l.Debug().
-						Str("type", "access").
-						Timestamp().
-						Msgf("Received %s %s - Responded with %d in %.2fms", r.Method, r.URL.Path, ww.Status(), float64(t2.Sub(t1).Nanoseconds())/1_000_000.0)
-				}
 
+				pathS := strings.Split(r.URL.Path, "/")
+				msg := fmt.Sprintf("Received %s %s - Responded with %d in %.2fms",
+					r.Method, r.URL.Path, ww.Status(), float64(t2.Sub(t1).Nanoseconds())/1_000_000.0)
+
+				if len(pathS) > 1 && pathS[1] == "apis" {
+					l.Info().Str("type", "access").Timestamp().Msg(msg)
+				} else {
+					l.Debug().Str("type", "access").Timestamp().Msg(msg)
+				}
 			}()
+
 			next.ServeHTTP(ww, r)
 		}
 		return http.HandlerFunc(fn)

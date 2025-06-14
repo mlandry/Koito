@@ -14,7 +14,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/images': {
-        target: 'http://192.168.0.153:4110',
+        target: 'http://localhost:4110',
         changeOrigin: true,
       }
     }

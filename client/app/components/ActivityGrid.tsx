@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { getActivity, type getActivityArgs } from "api/api"
+import { getActivity, type getActivityArgs, type ListenActivityItem } from "api/api"
 import Popup from "./Popup"
 import { useEffect, useState } from "react"
 import { useTheme } from "~/hooks/useTheme"
@@ -142,44 +142,55 @@ export default function ActivityGrid({
         }
     }
 
-    const dotSize = 12;
 
-    return (
-        <div className="flex flex-col items-start">
-            <h2>Activity</h2>
-            {configurable ?
-            <ActivityOptsSelector rangeSetter={setRange} currentRange={rangeState} stepSetter={setStep} currentStep={stepState} />
-            :
+    const mobileDotSize = 10
+    const normalDotSize = 12
+
+    let vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
+
+    let dotSize = vw > 768 ? normalDotSize : mobileDotSize
+
+    return (<div className="flex flex-col items-start">
+        <h2>Activity</h2>
+        {configurable ? (
+            <ActivityOptsSelector
+                rangeSetter={setRange}
+                currentRange={rangeState}
+                stepSetter={setStep}
+                currentStep={stepState}
+            />
+        ) : (
             ''
-            }
-            <div className="grid grid-flow-col grid-rows-7 gap-[5px]">
-                {data.map((item) => (
-                    <div
-                        key={new Date(item.start_time).toString()}
-                        style={{ width: dotSize, height: dotSize }}
+        )}
+        <div className="flex flex-row flex-wrap w-[94px] md:w-auto md:grid md:grid-flow-col md:grid-cols-7 md:grid-rows-7 gap-[4px] md:gap-[5px]">
+            {data.map((item) => (
+                <div
+                    key={new Date(item.start_time).toString()}
+                    style={{ width: dotSize, height: dotSize }}
+                >
+                    <Popup
+                        position="top"
+                        space={dotSize}
+                        extraClasses="left-2"
+                        inner={`${new Date(item.start_time).toLocaleDateString()} ${item.listens} plays`}
                     >
-                        <Popup
-                            position="top"
-                            space={dotSize}
-                            extraClasses="left-2"
-                            inner={`${new Date(item.start_time).toLocaleDateString()} ${item.listens} plays`}
-                        >
-                            <div
-                                style={{
-                                    width: dotSize,
-                                    height: dotSize,
-                                    display: 'inline-block',
-                                    background:
-                                        item.listens > 0
-                                            ? LightenDarkenColor(color, getDarkenAmount(item.listens, 100))
-                                            : 'var(--color-bg-secondary)',
-                                }}
-                                className={`rounded-[3px] ${item.listens > 0 ? '' : 'border-[0.5px] border-(--color-bg-tertiary)'}`}
-                            ></div>
-                        </Popup>
-                    </div>
-                ))}
-            </div>
+                        <div
+                            style={{
+                                display: 'inline-block',
+                                width: dotSize,
+                                height: dotSize,
+                                background:
+                                    item.listens > 0
+                                        ? LightenDarkenColor(color, getDarkenAmount(item.listens, 100))
+                                        : 'var(--color-bg-secondary)',
+                            }}
+                            className={`rounded-[2px] md:rounded-[3px] ${item.listens > 0 ? '' : 'border-[0.5px] border-(--color-bg-tertiary)'}`}
+                        ></div>
+                    </Popup>
+                </div>
+            ))}
         </div>
+    </div>
+    
     );
 }

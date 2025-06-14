@@ -29,7 +29,7 @@ export default function Home() {
           <ActivityGrid />
         </div>
         <PeriodSelector setter={setPeriod} current={period} />
-        <div className="flex flex-wrap 2xl:gap-20 xl:gap-10 justify-around gap-5">
+        <div className="flex flex-wrap 2xl:gap-20 xl:gap-10 justify-between mx-5 gap-5">
           <TopArtists period={period} limit={homeItems} />
           <TopAlbums period={period} limit={homeItems} />
           <TopTracks period={period} limit={homeItems} />

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -24,25 +25,34 @@ func ValidateSession(store db.DB) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			l := logger.FromContext(r.Context())
+
+			l.Debug().Msgf("ValidateSession: Checking user authentication via session cookie")
+
 			cookie, err := r.Cookie("koito_session")
 			var sid uuid.UUID
 			if err == nil {
 				sid, err = uuid.Parse(cookie.Value)
 				if err != nil {
+					l.Err(err).Msg("ValidateSession: Could not parse UUID from session cookie")
 					utils.WriteError(w, "session cookie is invalid", http.StatusUnauthorized)
 					return
 				}
+			} else {
+				l.Debug().Msgf("ValidateSession: No session cookie found; attempting API key authentication")
+				utils.WriteError(w, "session cookie is missing", http.StatusUnauthorized)
+				return
 			}
 
-			l.Debug().Msg("Retrieved login cookie from request")
+			l.Debug().Msg("ValidateSession: Retrieved login cookie from request")
 
 			u, err := store.GetUserBySession(r.Context(), sid)
 			if err != nil {
-				l.Err(err).Msg("Failed to get user from session")
+				l.Err(fmt.Errorf("ValidateSession: %w", err)).Msg("Error accessing database")
 				utils.WriteError(w, "internal server error", http.StatusInternalServerError)
 				return
 			}
 			if u == nil {
+				l.Debug().Msg("ValidateSession: No user with session id found")
 				utils.WriteError(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}
@@ -50,11 +60,11 @@ func ValidateSession(store db.DB) func(next http.Handler) http.Handler {
 			ctx := context.WithValue(r.Context(), UserContextKey, u)
 			r = r.WithContext(ctx)
 
-			l.Debug().Msgf("Refreshing session for user '%s'", u.Username)
+			l.Debug().Msgf("ValidateSession: Refreshing session for user '%s'", u.Username)
 
 			store.RefreshSession(r.Context(), sid, time.Now().Add(30*24*time.Hour))
 
-			l.Debug().Msgf("Refreshed session for user '%s'", u.Username)
+			l.Debug().Msgf("ValidateSession: Refreshed session for user '%s'", u.Username)
 
 			next.ServeHTTP(w, r)
 		})
@@ -67,10 +77,19 @@ func ValidateApiKey(store db.DB) func(next http.Handler) http.Handler {
 			ctx := r.Context()
 			l := logger.FromContext(ctx)
 
+			l.Debug().Msg("ValidateApiKey: Checking if user is already authenticated")
+
+			u := GetUserFromContext(ctx)
+			if u != nil {
+				l.Debug().Msg("ValidateApiKey: User is already authenticated; skipping API key authentication")
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			authh := r.Header.Get("Authorization")
 			s := strings.Split(authh, "Token ")
 			if len(s) < 2 {
-				l.Debug().Msg("Authorization header must be formatted 'Token {token}'")
+				l.Debug().Msg("ValidateApiKey: Authorization header must be formatted 'Token {token}'")
 				utils.WriteError(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}

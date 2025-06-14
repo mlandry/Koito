@@ -16,16 +16,25 @@ export default function SettingsModal({ open, setOpen } : Props) {
     const { user } = useAppContext()
 
     const triggerClasses = "px-4 py-2 w-full hover-bg-secondary rounded-md text-start data-[state=active]:bg-[var(--color-bg-secondary)]"
-    const contentClasses = "w-full px-10 overflow-y-auto"
+    const contentClasses = "w-full px-2 mt-8 sm:mt-0 sm:px-10 overflow-y-auto"
 
     return (
         <Modal h={600} isOpen={open} onClose={() => setOpen(false)} maxW={900}>
-            <Tabs defaultValue="Appearance" orientation="vertical" className="flex justify-between h-full">
-                <TabsList className="w-full flex flex-col gap-1 items-start max-w-1/4 rounded-md bg p-2 grow-0">
+            <Tabs
+                defaultValue="Appearance"
+                orientation="vertical" // still vertical, but layout is responsive via Tailwind
+                className="flex flex-col sm:flex-row h-full"
+            >
+                <TabsList className="flex flex-row sm:flex-col gap-1 w-full sm:max-w-1/4 rounded-md bg p-2">
                     <TabsTrigger className={triggerClasses} value="Appearance">Appearance</TabsTrigger>
                     <TabsTrigger className={triggerClasses} value="Account">Account</TabsTrigger>
-                    { user && <TabsTrigger className={triggerClasses} value="API Keys">API Keys</TabsTrigger>}
+                    {user && (
+                        <TabsTrigger className={triggerClasses} value="API Keys">
+                            API Keys
+                        </TabsTrigger>
+                    )}
                 </TabsList>
+
                 <TabsContent value="Account" className={contentClasses}>
                     <AccountPage />
                 </TabsContent>

@@ -34,7 +34,7 @@ func Run(
 	w io.Writer,
 	version string,
 ) error {
-	err := cfg.Load(getenv)
+	err := cfg.Load(getenv, version)
 	if err != nil {
 		panic("Engine: Failed to load configuration")
 	}
@@ -150,6 +150,12 @@ func Run(
 		l.Info().Msgf("Engine: Allowing hosts: %v", cfg.AllowedHosts())
 	}
 
+	if len(cfg.AllowedOrigins()) == 0 || cfg.AllowedOrigins()[0] == "" {
+		l.Info().Msgf("Engine: Using default CORS policy")
+	} else {
+		l.Info().Msgf("Engine: CORS policy: Allowing origins: %v", cfg.AllowedOrigins())
+	}
+
 	l.Debug().Msg("Engine: Setting up HTTP server")
 	var ready atomic.Bool
 	mux := chi.NewRouter()
@@ -157,6 +163,7 @@ func Run(
 	mux.Use(middleware.Logger(l))
 	mux.Use(chimiddleware.Recoverer)
 	mux.Use(chimiddleware.RealIP)
+	mux.Use(middleware.AllowedHosts)
 	bindRoutes(mux, &ready, store, mbzC)
 
 	httpServer := &http.Server{

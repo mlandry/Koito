@@ -25,12 +25,16 @@ func bindRoutes(
 	db db.DB,
 	mbz mbz.MusicBrainzCaller,
 ) {
+	if !(len(cfg.AllowedOrigins()) == 0) && !(cfg.AllowedOrigins()[0] == "") {
+		r.Use(cors.Handler(cors.Options{
+			AllowedOrigins: cfg.AllowedOrigins(),
+			AllowedMethods: []string{"GET", "OPTIONS", "HEAD"},
+		}))
+	}
 	r.With(chimiddleware.RequestSize(5<<20)).
-		With(middleware.AllowedHosts).
 		Get("/images/{size}/{filename}", handlers.ImageHandler(db))
 
 	r.Route("/apis/web/v1", func(r chi.Router) {
-		r.Use(middleware.AllowedHosts)
 		r.Get("/artist", handlers.GetArtistHandler(db))
 		r.Get("/album", handlers.GetAlbumHandler(db))
 		r.Get("/track", handlers.GetTrackHandler(db))

@@ -45,6 +45,13 @@ export default function MediaLayout(props: Props) {
 
     const title = `${props.title} - Koito`
 
+    const mobileIconSize = 22
+    const normalIconSize = 30
+
+    let vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
+
+    let iconSize = vw > 768 ? normalIconSize : mobileIconSize
+
     return (
         <main
         className="w-full flex flex-col flex-grow"
@@ -61,19 +68,21 @@ export default function MediaLayout(props: Props) {
         content={title}
         />
             <div className="w-19/20 mx-auto pt-12">
-                <div className="flex gap-8 relative">
-                    <img style={{zIndex: 5}} src={imageUrl(props.img, "large")} alt={props.title} className="w-sm shadow-(--color-shadow) shadow-lg" />
+                <div className="flex gap-8 flex-wrap relative">
+                    <div className="flex flex-col justify-around">
+                        <img style={{zIndex: 5}} src={imageUrl(props.img, "large")} alt={props.title} className="md:w-sm w-[220px] h-auto shadow-(--color-shadow) shadow-lg" />
+                    </div>
                     <div className="flex flex-col items-start">
                         <h3>{props.type}</h3>
                         <h1>{props.title}</h1>
                         {props.subContent}
                     </div>
                     { user &&
-                    <div className="absolute right-1 flex gap-3 items-center">
-                        <button title="Rename Item" className="hover:cursor-pointer" onClick={() => setRenameModalOpen(true)}><Edit size={30} /></button>
-                        <button title="Replace Image" className="hover:cursor-pointer" onClick={() => setImageModalOpen(true)}><ImageIcon size={30} /></button>
-                        <button title="Merge Items" className="hover:cursor-pointer" onClick={() => setMergeModalOpen(true)}><Merge size={30} /></button>
-                        <button title="Delete Item" className="hover:cursor-pointer" onClick={() => setDeleteModalOpen(true)}><Trash size={30} /></button>
+                    <div className="absolute left-1 sm:right-1 sm:left-auto -top-9 sm:top-1 flex gap-3 items-center">
+                        <button title="Rename Item" className="hover:cursor-pointer" onClick={() => setRenameModalOpen(true)}><Edit size={iconSize} /></button>
+                        <button title="Replace Image" className="hover:cursor-pointer" onClick={() => setImageModalOpen(true)}><ImageIcon size={iconSize} /></button>
+                        <button title="Merge Items" className="hover:cursor-pointer" onClick={() => setMergeModalOpen(true)}><Merge size={iconSize} /></button>
+                        <button title="Delete Item" className="hover:cursor-pointer" onClick={() => setDeleteModalOpen(true)}><Trash size={iconSize} /></button>
                         <RenameModal open={renameModalOpen} setOpen={setRenameModalOpen} type={props.type.toLowerCase()} id={props.id}/>
                         <ImageReplaceModal open={imageModalOpen} setOpen={setImageModalOpen} id={props.imgItemId} musicbrainzId={props.musicbrainzId} type={props.type === "Track" ? "Album" : props.type} />
                         <MergeModal currentTitle={props.title} mergeFunc={props.mergeFunc} mergeCleanerFunc={props.mergeCleanerFunc} type={props.type} currentId={props.id} open={mergeModalOpen} setOpen={setMergeModalOpen} />

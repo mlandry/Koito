@@ -25,8 +25,10 @@ export default function Account() {
         setLoading(false)
     }
     const updateHandler = () => {
+        setError('')
+        setSuccess('')
         if (password != "" && confirmPw === "") {
-            setError("confirm your password before submitting")
+            setError("confirm your new password before submitting")
             return
         }
         setError('')
@@ -58,37 +60,44 @@ export default function Account() {
                 <AsyncButton loading={loading} onClick={logoutHandler}>Logout</AsyncButton>
             </div>
             <h2>Update User</h2>
-            <div className="flex flex gap-4">
-                <input
-                    name="koito-update-username"
-                    type="text"
-                    placeholder="Update username"
-                    className="w-full mx-auto fg bg rounded p-2"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                />
-            </div>
-            <div className="flex flex gap-4">
-                <input
-                    name="koito-update-password"
-                    type="password"
-                    placeholder="Update password"
-                    className="w-full mx-auto fg bg rounded p-2"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-                <input
-                    name="koito-confirm-password"
-                    type="password"
-                    placeholder="Confirm new password"
-                    className="w-full mx-auto fg bg rounded p-2"
-                    value={confirmPw}
-                    onChange={(e) => setConfirmPw(e.target.value)}
-                />
-            </div>
-            <div className="w-sm">
-                <AsyncButton loading={loading} onClick={updateHandler}>Submit</AsyncButton>
-            </div>
+            <form action="#" onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-4">
+                <div className="flex flex gap-4">
+                    <input
+                        name="koito-update-username"
+                        type="text"
+                        placeholder="Update username"
+                        className="w-full mx-auto fg bg rounded p-2"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                    />
+                </div>
+                <div className="w-sm">
+                    <AsyncButton loading={loading} onClick={updateHandler}>Submit</AsyncButton>
+                </div>
+            </form>
+            <form action="#" onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-4">
+                <div className="flex flex gap-4">
+                    <input
+                        name="koito-update-password"
+                        type="password"
+                        placeholder="Update password"
+                        className="w-full mx-auto fg bg rounded p-2"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <input
+                        name="koito-confirm-password"
+                        type="password"
+                        placeholder="Confirm new password"
+                        className="w-full mx-auto fg bg rounded p-2"
+                        value={confirmPw}
+                        onChange={(e) => setConfirmPw(e.target.value)}
+                    />
+                </div>
+                <div className="w-sm">
+                    <AsyncButton loading={loading} onClick={updateHandler}>Submit</AsyncButton>
+                </div>
+            </form>
             {success != "" && <p className="success">{success}</p>}
             {error != "" && <p className="error">{error}</p>}
         </div>

@@ -45,6 +45,11 @@ durations will be filled in as you submit listens using the API.
 First, create an export file using [this tool from ghan.nl](https://lastfm.ghan.nl/export/) in JSON format. Then, place the resulting file into the `import` folder in your config directory.
 Once you restart Koito, it will automatically detect the file as a Last FM import, and begin adding your listen activity immediately.
 
+:::note
+LastFM exports do not include track duration information, which means that the 'Hours Listened' statistic may be incorrect after importing. However, track
+durations will be filled in as you submit listens using the API.
+:::
+
 ## ListenBrainz
 
 Create a ListenBrainz export file using [the export tool on the ListenBrainz website](https://listenbrainz.org/settings/export/). Then, place the resulting `.zip` file into the `import`

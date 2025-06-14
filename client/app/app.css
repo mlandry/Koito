@@ -55,13 +55,25 @@
 
 
 :root {
-  --header-xl: 78px;
+  --header-xl: 36px;
   --header-lg: 28px;
   --header-md: 22px;
   --header-sm: 16px;
   --header-xl-weight: 600;
   --header-weight: 600;
 }
+
+@media (min-width: 60rem) {
+  :root {
+    --header-xl: 78px;
+    --header-lg: 28px;
+    --header-md: 22px;
+    --header-sm: 16px;
+    --header-xl-weight: 600;
+    --header-weight: 600;
+  }
+}
+
 
 html,
 body {

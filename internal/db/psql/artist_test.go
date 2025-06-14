@@ -195,6 +195,13 @@ func TestDeleteArtistAlias(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, exists, "expected alias to still exist")
 
+	// Ensure primary alias cannot be deleted
+	err = store.DeleteArtistAlias(ctx, artist.ID, "Alias Artist")
+	require.NoError(t, err) // shouldn't error when nothing is deleted
+	artist, err = store.GetArtist(ctx, db.GetArtistOpts{ID: 1})
+	require.NoError(t, err)
+	assert.Equal(t, "Alias Artist", artist.Name)
+
 	truncateTestData(t)
 }
 func TestDeleteArtist(t *testing.T) {

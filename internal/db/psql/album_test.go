@@ -281,6 +281,13 @@ func TestDeleteAlbumAlias(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, exists, "expected alias to still exist")
 
+	// Ensure primary alias cannot be deleted
+	err = store.DeleteAlbumAlias(ctx, rg.ID, "Test Album")
+	require.NoError(t, err) // shouldn't error when nothing is deleted
+	rg, err = store.GetAlbum(ctx, db.GetAlbumOpts{ID: rg.ID})
+	require.NoError(t, err)
+	assert.Equal(t, "Test Album", rg.Title)
+
 	truncateTestData(t)
 }
 func TestGetAllAlbumAliases(t *testing.T) {

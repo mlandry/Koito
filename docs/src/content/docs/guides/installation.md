@@ -34,8 +34,8 @@ services:
 
 ```
 
-Be sure to replace `secret_password` with a random password of your choice, and set `KOITO_ALLOWED_HOSTS` to include the domain name or IP address + port you will be accessing Koito 
-from when using either of the Docker methods described above.
+Be sure to replace `secret_password` with a random password of your choice, and set `KOITO_ALLOWED_HOSTS` to include the domain name or IP address you will be accessing Koito 
+from.
 
 Those are the two required environment variables. You can find a full list of configuration options in the [configuration reference](/reference/configuration).
 

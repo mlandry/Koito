@@ -268,7 +268,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not start resource: %s", err)
 	}
 
-	err = cfg.Load(getTestGetenv(resource))
+	err = cfg.Load(getTestGetenv(resource), "test")
 	if err != nil {
 		log.Fatalf("Could not load cfg: %s", err)
 	}

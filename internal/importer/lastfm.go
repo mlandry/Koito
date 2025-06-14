@@ -105,6 +105,7 @@ func ImportLastFMFile(ctx context.Context, store db.DB, mbzc mbz.MusicBrainzCall
 				RecordingMbzID: trackMbzID,
 				ReleaseTitle:   album,
 				ReleaseMbzID:   albumMbzID,
+				Client:         "lastfm",
 				Time:           ts,
 				UserID:         1,
 			}

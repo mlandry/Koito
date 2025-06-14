@@ -80,7 +80,7 @@ func TestMain(m *testing.M) {
 	}
 
 	getenv := getTestGetenv(resource)
-	err = cfg.Load(getenv)
+	err = cfg.Load(getenv, "test")
 	if err != nil {
 		log.Fatalf("Could not load cfg: %s", err)
 	}

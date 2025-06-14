@@ -77,6 +77,7 @@ func ImportMalojaFile(ctx context.Context, store db.DB, filename string) error {
 			TrackTitle:   item.Track.Title,
 			ReleaseTitle: item.Track.Album.Title,
 			Time:         ts.Local(),
+			Client:       "maloja",
 			UserID:       1,
 		}
 		err = catalog.SubmitListen(ctx, store, opts)
