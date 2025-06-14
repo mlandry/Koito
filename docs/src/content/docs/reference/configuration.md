@@ -10,7 +10,7 @@ Koito is configured using **environment variables**. This is the full list of co
 - Description: A Postgres connection URI. See https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS for more information.
 ##### KOITO_ALLOWED_HOSTS
 - Required: `true`
-- Description: A list of hosts to allow requests from. E.g. `koito.mydomain.com,192.168.0.100`.
+- Description: A list of hosts to allow requests from. E.g. `koito.mydomain.com,192.168.0.100:4110`.
 ##### KOITO_DEFAULT_USERNAME
 - Default: `admin`
 - Description: The username for the user that is created on first startup. Only applies when running Koito for the first time.

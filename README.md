@@ -39,7 +39,7 @@ services:
       - db
     environment:
       - KOITO_DATABASE_URL=postgres://postgres:secret_password@db:5432/koitodb
-      - KOITO_ALLOWED_HOSTS=koito.example.com,192.168.0.100
+      - KOITO_ALLOWED_HOSTS=koito.example.com,192.168.0.100:4110
     ports:
       - "4110:4110"
     volumes:
