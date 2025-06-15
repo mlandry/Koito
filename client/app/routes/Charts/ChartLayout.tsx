@@ -212,43 +212,45 @@ export default function ChartLayout<T>({
 			<title>{pgTitle}</title>
 			<meta property="og:title" content={pgTitle} />
 			<meta name="description" content={pgTitle} />
-			<div className="w-17/20 mx-auto pt-12">
+			<div className="w-19/20 sm:17/20 mx-auto pt-6 sm:pt-12">
 				<h1>{title}</h1>
-				<div className="flex items-center gap-4">
+				<div className="flex flex-col items-start md:flex-row sm:items-center gap-4">
 					<PeriodSelector current={period} setter={handleSetPeriod} disableCache />
-					<select
-						value={year ?? ""}
-						onChange={(e) => handleSetYear(e.target.value)}
-						className="px-2 py-1 rounded border border-gray-400"
-					>
-						<option value="">Year</option>
-						{yearOptions.map((y) => (
-							<option key={y} value={y}>{y}</option>
-						))}
-					</select>
-					<select
-						value={month ?? ""}
-						onChange={(e) => handleSetMonth(e.target.value)}
-						className="px-2 py-1 rounded border border-gray-400"
-					>
-						<option value="">Month</option>
-						{monthOptions.map((m) => (
-							<option key={m} value={m}>{m}</option>
-						))}
-					</select>
-					<select
-						value={week ?? ""}
-						onChange={(e) => handleSetWeek(e.target.value)}
-						className="px-2 py-1 rounded border border-gray-400"
-					>
-						<option value="">Week</option>
-						{weekOptions.map((w) => (
-							<option key={w} value={w}>{w}</option>
-						))}
-					</select>
+					<div className="flex gap-5">
+						<select
+							value={year ?? ""}
+							onChange={(e) => handleSetYear(e.target.value)}
+							className="px-2 py-1 rounded border border-gray-400"
+						>
+							<option value="">Year</option>
+							{yearOptions.map((y) => (
+								<option key={y} value={y}>{y}</option>
+							))}
+						</select>
+						<select
+							value={month ?? ""}
+							onChange={(e) => handleSetMonth(e.target.value)}
+							className="px-2 py-1 rounded border border-gray-400"
+						>
+							<option value="">Month</option>
+							{monthOptions.map((m) => (
+								<option key={m} value={m}>{m}</option>
+							))}
+						</select>
+						<select
+							value={week ?? ""}
+							onChange={(e) => handleSetWeek(e.target.value)}
+							className="px-2 py-1 rounded border border-gray-400"
+						>
+							<option value="">Week</option>
+							{weekOptions.map((w) => (
+								<option key={w} value={w}>{w}</option>
+							))}
+						</select>
+					</div>
 				</div>
 				<p className="mt-2 text-sm text-color-fg-secondary">{getDateRange()}</p>
-				<div className="mt-20 flex mx-auto justify-between">
+				<div className="mt-10 sm:mt-20 flex mx-auto justify-between">
 					{render({
 						data,
 						page: currentPage,

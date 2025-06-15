@@ -67,7 +67,7 @@ export default function App() {
             <QueryClientProvider client={queryClient}>
                 <div className="flex-col flex sm:flex-row">
                   <Sidebar />
-                  <div className="flex flex-col items-center mx-auto w-full">
+                  <div className="flex flex-col items-center mx-auto w-full ml-0 sm:ml-[40px]">
                       <Outlet />
                       <Footer />
                   </div>

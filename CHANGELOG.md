@@ -1,14 +1,14 @@
-# v0.0.2
+# v0.0.3
 ## Features
-- Configurable CORS policy via KOITO_CORS_ALLOWED_ORIGINS
-- A baseline mobile UI
+- Delete listens from the UI
 
 ## Enhancements
-- The import source is now saved as the client for the imported listen.
+- Better behaved mobile UI
+- Search now returns 8 items per category instead of 5
 
 ## Fixes
-- Account update form now works on enter key
+- Many mobile UI fixes
 
 ## Updates
-- Non-sensitive query parameters are logged with requests
-- Koito version number is embedded through tags
+- Refuses a config that changes the MusicBrainz rate limit while using the official MusicBrainz URL
+- Warns when enabling ListenBrainz relay with missing configuration

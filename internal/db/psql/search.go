@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const searchItemLimit = 5
+const searchItemLimit = 8
 const substringSearchLength = 6
 
 func (d *Psql) SearchArtists(ctx context.Context, q string) ([]*models.Artist, error) {

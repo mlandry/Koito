@@ -24,12 +24,12 @@ export default function Home() {
   return (
     <main className="flex flex-grow justify-center pb-4">
       <div className="flex-1 flex flex-col items-center gap-16 min-h-0 mt-20">
-        <div className="flex gap-20">
+        <div className="flex flex-col md:flex-row gap-10 md:gap-20">
           <AllTimeStats />
           <ActivityGrid />
         </div>
         <PeriodSelector setter={setPeriod} current={period} />
-        <div className="flex flex-wrap 2xl:gap-20 xl:gap-10 justify-between mx-5 gap-5">
+        <div className="flex flex-wrap gap-10 2xl:gap-20 xl:gap-10 justify-between mx-5 md:gap-5">
           <TopArtists period={period} limit={homeItems} />
           <TopAlbums period={period} limit={homeItems} />
           <TopTracks period={period} limit={homeItems} />

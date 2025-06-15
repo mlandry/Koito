@@ -40,7 +40,7 @@ export default function Artist() {
           <TopItemList
             separators
             data={data}
-            width={600}
+            className="w-[400px] sm:w-[600px]"
             type="artist"
           />
           <div className="flex gap-15 mx-auto">

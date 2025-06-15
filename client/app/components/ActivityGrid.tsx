@@ -142,14 +142,6 @@ export default function ActivityGrid({
         }
     }
 
-
-    const mobileDotSize = 10
-    const normalDotSize = 12
-
-    let vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
-
-    let dotSize = vw > 768 ? normalDotSize : mobileDotSize
-
     return (<div className="flex flex-col items-start">
         <h2>Activity</h2>
         {configurable ? (
@@ -162,29 +154,27 @@ export default function ActivityGrid({
         ) : (
             ''
         )}
-        <div className="flex flex-row flex-wrap w-[94px] md:w-auto md:grid md:grid-flow-col md:grid-cols-7 md:grid-rows-7 gap-[4px] md:gap-[5px]">
+        <div className="w-auto grid grid-flow-col grid-rows-7 gap-[3px] md:gap-[5px]">
             {data.map((item) => (
                 <div
                     key={new Date(item.start_time).toString()}
-                    style={{ width: dotSize, height: dotSize }}
+                    className="w-[10px] sm:w-[12px] h-[10px] sm:h-[12px]"
                 >
                     <Popup
                         position="top"
-                        space={dotSize}
+                        space={12}
                         extraClasses="left-2"
                         inner={`${new Date(item.start_time).toLocaleDateString()} ${item.listens} plays`}
                     >
                         <div
                             style={{
                                 display: 'inline-block',
-                                width: dotSize,
-                                height: dotSize,
                                 background:
                                     item.listens > 0
                                         ? LightenDarkenColor(color, getDarkenAmount(item.listens, 100))
                                         : 'var(--color-bg-secondary)',
                             }}
-                            className={`rounded-[2px] md:rounded-[3px] ${item.listens > 0 ? '' : 'border-[0.5px] border-(--color-bg-tertiary)'}`}
+                            className={`w-[10px] sm:w-[12px] h-[10px] sm:h-[12px] rounded-[2px] md:rounded-[3px] ${item.listens > 0 ? '' : 'border-[0.5px] border-(--color-bg-tertiary)'}`}
                         ></div>
                     </Popup>
                 </div>

@@ -110,6 +110,11 @@ func loadConfig(getenv func(string) string, version string) (*config, error) {
 	if cfg.musicBrainzUrl == "" {
 		cfg.musicBrainzUrl = defaultMusicBrainzUrl
 	}
+
+	if cfg.musicBrainzUrl == defaultMusicBrainzUrl && cfg.musicBrainzRateLimit != 1 {
+		return nil, fmt.Errorf("loadConfig: invalid configuration: %s cannot be altered when %s is default", MUSICBRAINZ_RATE_LIMIT_ENV, MUSICBRAINZ_URL_ENV)
+	}
+
 	if parseBool(getenv(ENABLE_LBZ_RELAY_ENV)) {
 		cfg.lbzRelayEnabled = true
 		cfg.lbzRelayToken = getenv(LBZ_RELAY_TOKEN_ENV)

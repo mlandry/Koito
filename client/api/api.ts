@@ -157,6 +157,14 @@ function setPrimaryAlias(type: string, id: number, alias: string): Promise<Respo
     })
 }
 
+function deleteListen(listen: Listen): Promise<Response> {
+    const ms = new Date(listen.time).getTime()
+    const unix= Math.floor(ms / 1000); 
+    return fetch(`/apis/web/v1/listen?track_id=${listen.track.id}&unix=${unix}`, {
+        method: "DELETE"
+    })
+}
+
 export {
     getLastListens,
     getTopTracks,
@@ -182,6 +190,7 @@ export {
     createApiKey,
     deleteApiKey,
     updateApiKeyLabel,
+    deleteListen,
 }
 type Track = {
     id: number
