@@ -9,7 +9,7 @@ import ImageReplaceModal from "~/components/modals/ImageReplaceModal";
 import DeleteModal from "~/components/modals/DeleteModal";
 import RenameModal from "~/components/modals/RenameModal";
 
-export type MergeFunc = (from: number, to: number) => Promise<Response>
+export type MergeFunc = (from: number, to: number, replaceImage: boolean) => Promise<Response>
 export type MergeSearchCleanerFunc = (r: SearchResponse, id: number) => SearchResponse
 
 interface Props {

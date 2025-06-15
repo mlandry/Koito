@@ -82,7 +82,7 @@ function ItemCard({ item, type }: { item: Item; type: "album" | "track" | "artis
                             <span className="color-fg-secondary">Various Artists</span>
                             :
                             <div onClick={handleArtistClick} onKeyDown={handleArtistKeyDown}>
-                               <ArtistLinks artists={album.artists || [{id: 0, Name: 'Unknown Artist'}]}/>
+                               <ArtistLinks artists={album.artists ? [album.artists[0]] : [{id: 0, name: 'Unknown Artist'}]}/>
                             </div>
                             }
                             <div className="color-fg-secondary">{album.listen_count} plays</div>

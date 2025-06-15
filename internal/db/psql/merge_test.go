@@ -12,9 +12,9 @@ func setupTestDataForMerge(t *testing.T) {
 	truncateTestData(t)
 	// Insert artists
 	err := store.Exec(context.Background(),
-		`INSERT INTO artists (musicbrainz_id) 
-			VALUES ('00000000-0000-0000-0000-000000000001'),
-				   ('00000000-0000-0000-0000-000000000002')`)
+		`INSERT INTO artists (musicbrainz_id, image, image_source) 
+			VALUES ('00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000000', 'source.com'),
+				   ('00000000-0000-0000-0000-000000000002', NULL, NULL)`)
 	require.NoError(t, err)
 
 	err = store.Exec(context.Background(),
@@ -25,9 +25,9 @@ func setupTestDataForMerge(t *testing.T) {
 
 	// Insert albums
 	err = store.Exec(context.Background(),
-		`INSERT INTO releases (musicbrainz_id) 
-			VALUES ('11111111-1111-1111-1111-111111111111'),
-				   ('22222222-2222-2222-2222-222222222222')`)
+		`INSERT INTO releases (musicbrainz_id, image, image_source) 
+			VALUES ('11111111-1111-1111-1111-111111111111', '20000000-0000-0000-0000-000000000000', 'source.com'),
+				   ('22222222-2222-2222-2222-222222222222', NULL, NULL)`)
 	require.NoError(t, err)
 
 	err = store.Exec(context.Background(),
@@ -90,11 +90,15 @@ func TestMergeAlbums(t *testing.T) {
 	setupTestDataForMerge(t)
 
 	// Merge Album 1 into Album 2
-	err := store.MergeAlbums(ctx, 1, 2)
+	err := store.MergeAlbums(ctx, 1, 2, true)
 	require.NoError(t, err)
 
+	// Verify image was replaced
+	count, err := store.Count(ctx, `SELECT COUNT(*) FROM releases WHERE image = '20000000-0000-0000-0000-000000000000' AND image_source = 'source.com'`)
+	require.NoError(t, err)
+	assert.Equal(t, 1, count, "expected merged release to contain image information")
+
 	// Verify tracks are updated
-	var count int
 	count, err = store.Count(ctx, `SELECT COUNT(*) FROM tracks WHERE release_id = 2`)
 	require.NoError(t, err)
 	assert.Equal(t, 2, count, "expected all tracks to be merged into Album 2")
@@ -107,11 +111,15 @@ func TestMergeArtists(t *testing.T) {
 	setupTestDataForMerge(t)
 
 	// Merge Artist 1 into Artist 2
-	err := store.MergeArtists(ctx, 1, 2)
+	err := store.MergeArtists(ctx, 1, 2, true)
 	require.NoError(t, err)
 
+	// Verify image was replaced
+	count, err := store.Count(ctx, `SELECT COUNT(*) FROM artists WHERE image = '10000000-0000-0000-0000-000000000000' AND image_source = 'source.com'`)
+	require.NoError(t, err)
+	assert.Equal(t, 1, count, "expected merged artist to contain image information")
+
 	// Verify artist associations are updated
-	var count int
 	count, err = store.Count(ctx, `SELECT COUNT(*) FROM artist_tracks WHERE artist_id = 2`)
 	require.NoError(t, err)
 	assert.Equal(t, 2, count, "expected all tracks to be associated with Artist 2")

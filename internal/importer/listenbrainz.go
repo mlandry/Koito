@@ -113,20 +113,34 @@ func ImportListenBrainzFile(ctx context.Context, store db.DB, mbzc mbz.MusicBrai
 		} else if payload.TrackMeta.AdditionalInfo.DurationMs != 0 {
 			duration = payload.TrackMeta.AdditionalInfo.DurationMs / 1000
 		}
+
+		var artistMbidMap []catalog.ArtistMbidMap
+		for _, a := range payload.TrackMeta.MBIDMapping.Artists {
+			if a.ArtistMBID == "" || a.ArtistName == "" {
+				continue
+			}
+			mbid, err := uuid.Parse(a.ArtistMBID)
+			if err != nil {
+				l.Err(err).Msgf("LbzSubmitListenHandler: Failed to parse UUID for artist '%s'", a.ArtistName)
+			}
+			artistMbidMap = append(artistMbidMap, catalog.ArtistMbidMap{Artist: a.ArtistName, Mbid: mbid})
+		}
+
 		opts := catalog.SubmitListenOpts{
-			MbzCaller:         mbzc,
-			ArtistNames:       payload.TrackMeta.AdditionalInfo.ArtistNames,
-			Artist:            payload.TrackMeta.ArtistName,
-			ArtistMbzIDs:      artistMbzIDs,
-			TrackTitle:        payload.TrackMeta.TrackName,
-			RecordingMbzID:    recordingMbzID,
-			ReleaseTitle:      payload.TrackMeta.ReleaseName,
-			ReleaseMbzID:      releaseMbzID,
-			ReleaseGroupMbzID: rgMbzID,
-			Duration:          duration,
-			Time:              ts,
-			UserID:            1,
-			Client:            client,
+			MbzCaller:          mbzc,
+			ArtistNames:        payload.TrackMeta.AdditionalInfo.ArtistNames,
+			Artist:             payload.TrackMeta.ArtistName,
+			ArtistMbzIDs:       artistMbzIDs,
+			TrackTitle:         payload.TrackMeta.TrackName,
+			RecordingMbzID:     recordingMbzID,
+			ReleaseTitle:       payload.TrackMeta.ReleaseName,
+			ReleaseMbzID:       releaseMbzID,
+			ReleaseGroupMbzID:  rgMbzID,
+			ArtistMbidMappings: artistMbidMap,
+			Duration:           duration,
+			Time:               ts,
+			UserID:             1,
+			Client:             client,
 		}
 		err = catalog.SubmitListen(ctx, store, opts)
 		if err != nil {

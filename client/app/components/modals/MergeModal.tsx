@@ -21,6 +21,7 @@ export default function MergeModal(props: Props) {
     const [debouncedQuery, setDebouncedQuery] = useState(query);
     const [mergeTarget, setMergeTarget] = useState<{title: string, id: number}>({title: '', id: 0})
     const [mergeOrderReversed, setMergeOrderReversed] = useState(false)
+    const [replaceImage, setReplaceImage] = useState(false)
     const navigate = useNavigate()
 
 
@@ -53,7 +54,7 @@ export default function MergeModal(props: Props) {
             from = {id: props.currentId, title: props.currentTitle}
             to = mergeTarget
         }
-        props.mergeFunc(from.id, to.id)
+        props.mergeFunc(from.id, to.id, replaceImage)
         .then(r => {
             if (r.ok) {
                 if (mergeOrderReversed) {
@@ -117,6 +118,13 @@ export default function MergeModal(props: Props) {
                 <input type="checkbox" name="reverse-merge-order" checked={mergeOrderReversed} onChange={() => setMergeOrderReversed(!mergeOrderReversed)} />
                 <label htmlFor="reverse-merge-order">Reverse merge order</label>
             </div>
+            {
+            (props.type.toLowerCase() === "album" || props.type.toLowerCase() === "artist") &&
+            <div className="flex gap-2 mt-3">
+                <input type="checkbox" name="replace-image" checked={replaceImage} onChange={() => setReplaceImage(!replaceImage)} />
+                <label htmlFor="replace-image">Replace image</label>
+            </div>
+            }
             </> :
             ''}
         </div>

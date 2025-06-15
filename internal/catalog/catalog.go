@@ -29,24 +29,30 @@ type SaveListenOpts struct {
 	Time    time.Time
 }
 
+type ArtistMbidMap struct {
+	Artist string
+	Mbid   uuid.UUID
+}
+
 type SubmitListenOpts struct {
 	// When true, skips registering the listen and only associates or creates the
 	// artist, release, release group, and track in DB
 	SkipSaveListen bool
 
-	MbzCaller         mbz.MusicBrainzCaller
-	ArtistNames       []string
-	Artist            string
-	ArtistMbzIDs      []uuid.UUID
-	TrackTitle        string
-	RecordingMbzID    uuid.UUID
-	Duration          int32 // in seconds
-	ReleaseTitle      string
-	ReleaseMbzID      uuid.UUID
-	ReleaseGroupMbzID uuid.UUID
-	Time              time.Time
-	UserID            int32
-	Client            string
+	MbzCaller          mbz.MusicBrainzCaller
+	ArtistNames        []string
+	Artist             string
+	ArtistMbzIDs       []uuid.UUID
+	ArtistMbidMappings []ArtistMbidMap
+	TrackTitle         string
+	RecordingMbzID     uuid.UUID
+	Duration           int32 // in seconds
+	ReleaseTitle       string
+	ReleaseMbzID       uuid.UUID
+	ReleaseGroupMbzID  uuid.UUID
+	Time               time.Time
+	UserID             int32
+	Client             string
 }
 
 const (
@@ -64,11 +70,12 @@ func SubmitListen(ctx context.Context, store db.DB, opts SubmitListenOpts) error
 		ctx,
 		store,
 		AssociateArtistsOpts{
-			ArtistMbzIDs: opts.ArtistMbzIDs,
-			ArtistNames:  opts.ArtistNames,
-			ArtistName:   opts.Artist,
-			Mbzc:         opts.MbzCaller,
-			TrackTitle:   opts.TrackTitle,
+			ArtistMbzIDs:  opts.ArtistMbzIDs,
+			ArtistNames:   opts.ArtistNames,
+			ArtistName:    opts.Artist,
+			ArtistMbidMap: opts.ArtistMbidMappings,
+			Mbzc:          opts.MbzCaller,
+			TrackTitle:    opts.TrackTitle,
 		})
 	if err != nil {
 		l.Error().Err(err).Msg("Failed to associate artists to listen")

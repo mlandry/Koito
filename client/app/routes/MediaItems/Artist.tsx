@@ -7,6 +7,7 @@ import PeriodSelector from "~/components/PeriodSelector";
 import MediaLayout from "./MediaLayout";
 import ArtistAlbums from "~/components/ArtistAlbums";
 import ActivityGrid from "~/components/ActivityGrid";
+import { timeListenedString } from "~/utils/utils";
 
 export async function clientLoader({ params }: LoaderFunctionArgs) {
   const res = await fetch(`/apis/web/v1/artist?id=${params.id}`);
@@ -46,9 +47,10 @@ export default function Artist() {
             }
             return r
         }}
-        subContent={<>
+        subContent={<div className="flex flex-col gap-2 items-start">
         {artist.listen_count && <p>{artist.listen_count} play{ artist.listen_count > 1 ? 's' : ''}</p>}
-        </>}
+        {<p>{timeListenedString(artist.time_listened)}</p>}
+        </div>}
     >
         <div className="mt-10">
             <PeriodSelector setter={setPeriod} current={period} />

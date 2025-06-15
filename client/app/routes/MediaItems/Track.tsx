@@ -5,6 +5,7 @@ import LastPlays from "~/components/LastPlays";
 import PeriodSelector from "~/components/PeriodSelector";
 import MediaLayout from "./MediaLayout";
 import ActivityGrid from "~/components/ActivityGrid";
+import { timeListenedString } from "~/utils/utils";
 
 export async function clientLoader({ params }: LoaderFunctionArgs) {
     let res = await fetch(`/apis/web/v1/track?id=${params.id}`);
@@ -42,9 +43,10 @@ export default function Track() {
                 }
                 return r
             }}
-            subContent={<div className="flex flex-col gap-4 items-start">
+            subContent={<div className="flex flex-col gap-2 items-start">
             <Link to={`/album/${track.album_id}`}>appears on {album.title}</Link>
             {track.listen_count && <p>{track.listen_count} play{ track.listen_count > 1 ? 's' : ''}</p>}
+            {<p>{timeListenedString(track.time_listened)}</p>}
             </div>}
         >
             <div className="mt-10">

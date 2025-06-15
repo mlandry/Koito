@@ -86,5 +86,17 @@ const hexToHSL = (hex: string): hsl => {
     };
 };
 
-export {hexToHSL}
+const timeListenedString = (seconds: number) => {
+    if (!seconds) return ""
+
+    if (seconds > (120 * 60) - 1) {
+      let hours = Math.floor(seconds / 60 / 60)
+      return `${hours} hours listened`
+    } else {
+      let minutes = Math.floor(seconds / 60)
+      return `${minutes} minutes listened`
+    }
+  }
+
+export {hexToHSL, timeListenedString}
 export type {hsl}

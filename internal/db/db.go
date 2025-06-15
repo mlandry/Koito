@@ -64,6 +64,7 @@ type DB interface {
 	CountAlbums(ctx context.Context, period Period) (int64, error)
 	CountArtists(ctx context.Context, period Period) (int64, error)
 	CountTimeListened(ctx context.Context, period Period) (int64, error)
+	CountTimeListenedToItem(ctx context.Context, opts TimeListenedOpts) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
 	// Search
 	SearchArtists(ctx context.Context, q string) ([]*models.Artist, error)
@@ -71,8 +72,8 @@ type DB interface {
 	SearchTracks(ctx context.Context, q string) ([]*models.Track, error)
 	// Merge
 	MergeTracks(ctx context.Context, fromId, toId int32) error
-	MergeAlbums(ctx context.Context, fromId, toId int32) error
-	MergeArtists(ctx context.Context, fromId, toId int32) error
+	MergeAlbums(ctx context.Context, fromId, toId int32, replaceImage bool) error
+	MergeArtists(ctx context.Context, fromId, toId int32, replaceImage bool) error
 	// Etc
 	ImageHasAssociation(ctx context.Context, image uuid.UUID) (bool, error)
 	GetImageSource(ctx context.Context, image uuid.UUID) (string, error)

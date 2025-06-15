@@ -72,10 +72,19 @@ func (d *Psql) GetTrack(ctx context.Context, opts db.GetTrackOpts) (*models.Trac
 		TrackID:      track.ID,
 	})
 	if err != nil {
-		l.Err(err).Msgf("Failed to get listen count for track with id %d", track.ID)
+		return nil, err
+	}
+
+	seconds, err := d.CountTimeListenedToItem(ctx, db.TimeListenedOpts{
+		Period:  db.PeriodAllTime,
+		TrackID: track.ID,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	track.ListenCount = count
+	track.TimeListened = seconds
 
 	return &track, nil
 }

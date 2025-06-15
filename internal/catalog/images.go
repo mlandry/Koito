@@ -30,6 +30,15 @@ const (
 	ImageCacheDir = "image_cache"
 )
 
+func ImageSourceSize() (size ImageSize) {
+	if cfg.FullImageCacheEnabled() {
+		size = ImageSizeFull
+	} else {
+		size = ImageSizeLarge
+	}
+	return
+}
+
 func ParseImageSize(size string) (ImageSize, error) {
 	switch strings.ToLower(size) {
 	case "small":

@@ -2,6 +2,7 @@ package psql
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/gabehf/koito/internal/db"
@@ -67,4 +68,42 @@ func (p *Psql) CountTimeListened(ctx context.Context, period db.Period) (int64, 
 		return 0, err
 	}
 	return count, nil
+}
+func (p *Psql) CountTimeListenedToItem(ctx context.Context, opts db.TimeListenedOpts) (int64, error) {
+	t2 := time.Now()
+	t1 := db.StartTimeFromPeriod(opts.Period)
+
+	if opts.ArtistID > 0 {
+		count, err := p.q.CountTimeListenedToArtist(ctx, repository.CountTimeListenedToArtistParams{
+			ListenedAt:   t1,
+			ListenedAt_2: t2,
+			ArtistID:     opts.ArtistID,
+		})
+		if err != nil {
+			return 0, err
+		}
+		return count, nil
+	} else if opts.AlbumID > 0 {
+		count, err := p.q.CountTimeListenedToRelease(ctx, repository.CountTimeListenedToReleaseParams{
+			ListenedAt:   t1,
+			ListenedAt_2: t2,
+			ReleaseID:    opts.AlbumID,
+		})
+		if err != nil {
+			return 0, err
+		}
+		return count, nil
+
+	} else if opts.TrackID > 0 {
+		count, err := p.q.CountTimeListenedToTrack(ctx, repository.CountTimeListenedToTrackParams{
+			ListenedAt:   t1,
+			ListenedAt_2: t2,
+			ID:           opts.TrackID,
+		})
+		if err != nil {
+			return 0, err
+		}
+		return count, nil
+	}
+	return 0, errors.New("an id must be provided")
 }

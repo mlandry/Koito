@@ -856,3 +856,64 @@ func TestSubmitListen_MusicBrainzUnreachable(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, exists, "expected listen row to exist")
 }
+
+func TestSubmitListen_MusicBrainzUnreachableMBIDMappings(t *testing.T) {
+	truncateTestData(t)
+
+	// correctly associate MBID when musicbrainz unreachable, but map provided
+
+	ctx := context.Background()
+	mbzc := &mbz.MbzErrorCaller{}
+	artistMbzID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	artist2MbzID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
+	releaseGroupMbzID := uuid.MustParse("00000000-0000-0000-0000-000000000011")
+	releaseMbzID := uuid.MustParse("00000000-0000-0000-0000-000000000101")
+	trackMbzID := uuid.MustParse("00000000-0000-0000-0000-000000001001")
+	artistMbzIdMap := []catalog.ArtistMbidMap{{Artist: "ATARASHII GAKKO!", Mbid: artistMbzID}, {Artist: "Featured Artist", Mbid: artist2MbzID}}
+	opts := catalog.SubmitListenOpts{
+		MbzCaller:   mbzc,
+		ArtistNames: []string{"ATARASHII GAKKO!", "Featured Artist"},
+		Artist:      "ATARASHII GAKKO! feat. Featured Artist",
+		ArtistMbzIDs: []uuid.UUID{
+			artistMbzID,
+		},
+		TrackTitle:         "Tokyo Calling",
+		RecordingMbzID:     trackMbzID,
+		ReleaseTitle:       "AG! Calling",
+		ReleaseMbzID:       releaseMbzID,
+		ReleaseGroupMbzID:  releaseGroupMbzID,
+		ArtistMbidMappings: artistMbzIdMap,
+		Time:               time.Now(),
+		UserID:             1,
+	}
+
+	err := catalog.SubmitListen(ctx, store, opts)
+	require.NoError(t, err)
+
+	// Verify that the listen was saved
+	exists, err := store.RowExists(ctx, `
+    SELECT EXISTS (
+      SELECT 1 FROM listens
+      WHERE track_id = $1
+    )`, 1)
+	require.NoError(t, err)
+	assert.True(t, exists, "expected listen row to exist")
+
+	// Verify that the artist has the mbid saved
+	exists, err = store.RowExists(ctx, `
+    SELECT EXISTS (
+      SELECT 1 FROM artists
+      WHERE musicbrainz_id = $1
+    )`, artistMbzID)
+	require.NoError(t, err)
+	assert.True(t, exists, "expected artist to have correct musicbrainz id")
+
+	// Verify that the artist has the mbid saved
+	exists, err = store.RowExists(ctx, `
+    SELECT EXISTS (
+      SELECT 1 FROM artists
+      WHERE musicbrainz_id = $1
+    )`, artist2MbzID)
+	require.NoError(t, err)
+	assert.True(t, exists, "expected artist to have correct musicbrainz id")
+}

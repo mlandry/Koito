@@ -138,3 +138,10 @@ type ListenActivityOpts struct {
 	ArtistID int32
 	TrackID  int32
 }
+
+type TimeListenedOpts struct {
+	Period   Period
+	AlbumID  int32
+	ArtistID int32
+	TrackID  int32
+}

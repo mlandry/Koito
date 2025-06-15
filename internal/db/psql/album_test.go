@@ -47,21 +47,16 @@ func testDataForRelease(t *testing.T) {
 }
 
 func TestGetAlbum(t *testing.T) {
-	testDataForRelease(t)
+	testDataForTopItems(t)
 	ctx := context.Background()
 
-	// Insert test data
-	rg, err := store.SaveAlbum(ctx, db.SaveAlbumOpts{
-		Title:     "Test Release Group",
-		ArtistIDs: []int32{1},
-	})
-	require.NoError(t, err)
-
 	// Test GetAlbum by ID
-	result, err := store.GetAlbum(ctx, db.GetAlbumOpts{ID: rg.ID})
+	result, err := store.GetAlbum(ctx, db.GetAlbumOpts{ID: 1})
 	require.NoError(t, err)
-	assert.Equal(t, rg.ID, result.ID)
-	assert.Equal(t, "Test Release Group", result.Title)
+	assert.EqualValues(t, 1, result.ID)
+	assert.Equal(t, "Release One", result.Title)
+	assert.EqualValues(t, 4, result.ListenCount)
+	assert.EqualValues(t, 400, result.TimeListened)
 
 	// Test GetAlbum with insufficient information
 	_, err = store.GetAlbum(ctx, db.GetAlbumOpts{})

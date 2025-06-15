@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gabehf/koito/internal/db"
 	"github.com/gabehf/koito/internal/logger"
@@ -67,9 +68,16 @@ func MergeReleaseGroupsHandler(store db.DB) http.HandlerFunc {
 			return
 		}
 
+		var replaceImage bool
+		replaceImgStr := r.URL.Query().Get("replace_image")
+		if strings.ToLower(replaceImgStr) == "true" {
+			l.Debug().Msg("MergeReleaseGroupsHandler: Merge will replace image")
+			replaceImage = true
+		}
+
 		l.Debug().Msgf("MergeReleaseGroupsHandler: Merging release groups from ID %d to ID %d", fromId, toId)
 
-		err = store.MergeAlbums(r.Context(), int32(fromId), int32(toId))
+		err = store.MergeAlbums(r.Context(), int32(fromId), int32(toId), replaceImage)
 		if err != nil {
 			l.Err(err).Msg("MergeReleaseGroupsHandler: Failed to merge release groups")
 			utils.WriteError(w, "Failed to merge release groups: "+err.Error(), http.StatusInternalServerError)
@@ -103,9 +111,16 @@ func MergeArtistsHandler(store db.DB) http.HandlerFunc {
 			return
 		}
 
+		var replaceImage bool
+		replaceImgStr := r.URL.Query().Get("replace_image")
+		if strings.ToLower(replaceImgStr) == "true" {
+			l.Debug().Msg("MergeReleaseGroupsHandler: Merge will replace image")
+			replaceImage = true
+		}
+
 		l.Debug().Msgf("MergeArtistsHandler: Merging artists from ID %d to ID %d", fromId, toId)
 
-		err = store.MergeArtists(r.Context(), int32(fromId), int32(toId))
+		err = store.MergeArtists(r.Context(), int32(fromId), int32(toId), replaceImage)
 		if err != nil {
 			l.Err(err).Msg("MergeArtistsHandler: Failed to merge artists")
 			utils.WriteError(w, "Failed to merge artists: "+err.Error(), http.StatusInternalServerError)

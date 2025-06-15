@@ -87,16 +87,16 @@ func ValidateApiKey(store db.DB) func(next http.Handler) http.Handler {
 			}
 
 			authh := r.Header.Get("Authorization")
-			s := strings.Split(authh, "Token ")
-			if len(s) < 2 {
-				l.Debug().Msg("ValidateApiKey: Authorization header must be formatted 'Token {token}'")
+			var token string
+			if strings.HasPrefix(strings.ToLower(authh), "token ") {
+				token = strings.TrimSpace(authh[6:]) // strip "Token "
+			} else {
+				l.Error().Msg("ValidateApiKey: Authorization header must be formatted 'Token {token}'")
 				utils.WriteError(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}
 
-			key := s[1]
-
-			u, err := store.GetUserByApiKey(ctx, key)
+			u, err := store.GetUserByApiKey(ctx, token)
 			if err != nil {
 				l.Err(err).Msg("Failed to get user from database using api key")
 				utils.WriteError(w, "internal server error", http.StatusInternalServerError)

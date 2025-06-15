@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// this function sucks because sqlc keeps making new types for rows that are the same
 func (d *Psql) GetArtist(ctx context.Context, opts db.GetArtistOpts) (*models.Artist, error) {
 	l := logger.FromContext(ctx)
 	if opts.ID != 0 {
@@ -32,13 +33,21 @@ func (d *Psql) GetArtist(ctx context.Context, opts db.GetArtistOpts) (*models.Ar
 		if err != nil {
 			return nil, err
 		}
+		seconds, err := d.CountTimeListenedToItem(ctx, db.TimeListenedOpts{
+			Period:   db.PeriodAllTime,
+			ArtistID: row.ID,
+		})
+		if err != nil {
+			return nil, err
+		}
 		return &models.Artist{
-			ID:          row.ID,
-			MbzID:       row.MusicBrainzID,
-			Name:        row.Name,
-			Aliases:     row.Aliases,
-			Image:       row.Image,
-			ListenCount: count,
+			ID:           row.ID,
+			MbzID:        row.MusicBrainzID,
+			Name:         row.Name,
+			Aliases:      row.Aliases,
+			Image:        row.Image,
+			ListenCount:  count,
+			TimeListened: seconds,
 		}, nil
 	} else if opts.MusicBrainzID != uuid.Nil {
 		l.Debug().Msgf("Fetching artist from DB with MusicBrainz ID %s", opts.MusicBrainzID)
@@ -54,13 +63,21 @@ func (d *Psql) GetArtist(ctx context.Context, opts db.GetArtistOpts) (*models.Ar
 		if err != nil {
 			return nil, err
 		}
+		seconds, err := d.CountTimeListenedToItem(ctx, db.TimeListenedOpts{
+			Period:   db.PeriodAllTime,
+			ArtistID: row.ID,
+		})
+		if err != nil {
+			return nil, err
+		}
 		return &models.Artist{
-			ID:          row.ID,
-			MbzID:       row.MusicBrainzID,
-			Name:        row.Name,
-			Aliases:     row.Aliases,
-			Image:       row.Image,
-			ListenCount: count,
+			ID:           row.ID,
+			MbzID:        row.MusicBrainzID,
+			Name:         row.Name,
+			Aliases:      row.Aliases,
+			Image:        row.Image,
+			TimeListened: seconds,
+			ListenCount:  count,
 		}, nil
 	} else if opts.Name != "" {
 		l.Debug().Msgf("Fetching artist from DB with name '%s'", opts.Name)
@@ -76,13 +93,21 @@ func (d *Psql) GetArtist(ctx context.Context, opts db.GetArtistOpts) (*models.Ar
 		if err != nil {
 			return nil, err
 		}
+		seconds, err := d.CountTimeListenedToItem(ctx, db.TimeListenedOpts{
+			Period:   db.PeriodAllTime,
+			ArtistID: row.ID,
+		})
+		if err != nil {
+			return nil, err
+		}
 		return &models.Artist{
-			ID:          row.ID,
-			MbzID:       row.MusicBrainzID,
-			Name:        row.Name,
-			Aliases:     row.Aliases,
-			Image:       row.Image,
-			ListenCount: count,
+			ID:           row.ID,
+			MbzID:        row.MusicBrainzID,
+			Name:         row.Name,
+			Aliases:      row.Aliases,
+			Image:        row.Image,
+			ListenCount:  count,
+			TimeListened: seconds,
 		}, nil
 	} else {
 		return nil, errors.New("insufficient information to get artist")

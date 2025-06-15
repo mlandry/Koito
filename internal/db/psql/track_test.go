@@ -44,9 +44,9 @@ func testDataForTracks(t *testing.T) {
 
 	// Insert tracks
 	err = store.Exec(context.Background(),
-		`INSERT INTO tracks (musicbrainz_id, release_id) 
-			VALUES ('11111111-1111-1111-1111-111111111111', 1),
-				   ('22222222-2222-2222-2222-222222222222', 2)`)
+		`INSERT INTO tracks (musicbrainz_id, release_id, duration) 
+			VALUES ('11111111-1111-1111-1111-111111111111', 1, 100),
+				   ('22222222-2222-2222-2222-222222222222', 2, 100)`)
 	require.NoError(t, err)
 
 	// Insert track aliases
@@ -61,6 +61,12 @@ func testDataForTracks(t *testing.T) {
 		`INSERT INTO artist_tracks (artist_id, track_id) 
 			VALUES (1, 1), (2, 2)`)
 	require.NoError(t, err)
+
+	// Associate tracks with artists
+	err = store.Exec(context.Background(),
+		`INSERT INTO listens (user_id, track_id, listened_at) 
+			VALUES (1, 1, NOW()), (1, 2, NOW())`)
+	require.NoError(t, err)
 }
 
 func TestGetTrack(t *testing.T) {
@@ -73,12 +79,14 @@ func TestGetTrack(t *testing.T) {
 	assert.Equal(t, int32(1), track.ID)
 	assert.Equal(t, "Track One", track.Title)
 	assert.Equal(t, uuid.MustParse("11111111-1111-1111-1111-111111111111"), *track.MbzID)
+	assert.EqualValues(t, 100, track.TimeListened)
 
 	// Test GetTrack by MusicBrainzID
 	track, err = store.GetTrack(ctx, db.GetTrackOpts{MusicBrainzID: uuid.MustParse("22222222-2222-2222-2222-222222222222")})
 	require.NoError(t, err)
 	assert.Equal(t, int32(2), track.ID)
 	assert.Equal(t, "Track Two", track.Title)
+	assert.EqualValues(t, 100, track.TimeListened)
 
 	// Test GetTrack by Title and ArtistIDs
 	track, err = store.GetTrack(ctx, db.GetTrackOpts{
@@ -88,6 +96,7 @@ func TestGetTrack(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int32(1), track.ID)
 	assert.Equal(t, "Track One", track.Title)
+	assert.EqualValues(t, 100, track.TimeListened)
 
 	// Test GetTrack with insufficient information
 	_, err = store.GetTrack(ctx, db.GetTrackOpts{})

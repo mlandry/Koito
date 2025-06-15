@@ -2,6 +2,7 @@ package psql
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gabehf/koito/internal/logger"
 	"github.com/gabehf/koito/internal/repository"
@@ -14,7 +15,7 @@ func (d *Psql) MergeTracks(ctx context.Context, fromId, toId int32) error {
 	tx, err := d.conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		l.Err(err).Msg("Failed to begin transaction")
-		return err
+		return fmt.Errorf("MergeTracks: %w", err)
 	}
 	defer tx.Rollback(ctx)
 	qtx := d.q.WithTx(tx)
@@ -23,7 +24,7 @@ func (d *Psql) MergeTracks(ctx context.Context, fromId, toId int32) error {
 		TrackID_2: toId,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("MergeTracks: %w", err)
 	}
 	err = qtx.CleanOrphanedEntries(ctx)
 	if err != nil {
@@ -33,13 +34,13 @@ func (d *Psql) MergeTracks(ctx context.Context, fromId, toId int32) error {
 	return tx.Commit(ctx)
 }
 
-func (d *Psql) MergeAlbums(ctx context.Context, fromId, toId int32) error {
+func (d *Psql) MergeAlbums(ctx context.Context, fromId, toId int32, replaceImage bool) error {
 	l := logger.FromContext(ctx)
 	l.Info().Msgf("Merging album %d into album %d", fromId, toId)
 	tx, err := d.conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		l.Err(err).Msg("Failed to begin transaction")
-		return err
+		return fmt.Errorf("MergeAlbums: %w", err)
 	}
 	defer tx.Rollback(ctx)
 	qtx := d.q.WithTx(tx)
@@ -48,7 +49,21 @@ func (d *Psql) MergeAlbums(ctx context.Context, fromId, toId int32) error {
 		ReleaseID_2: toId,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("MergeAlbums: %w", err)
+	}
+	if replaceImage {
+		old, err := qtx.GetRelease(ctx, fromId)
+		if err != nil {
+			return fmt.Errorf("MergeAlbums: %w", err)
+		}
+		err = qtx.UpdateReleaseImage(ctx, repository.UpdateReleaseImageParams{
+			ID:          toId,
+			Image:       old.Image,
+			ImageSource: old.ImageSource,
+		})
+		if err != nil {
+			return fmt.Errorf("MergeAlbums: %w", err)
+		}
 	}
 	err = qtx.CleanOrphanedEntries(ctx)
 	if err != nil {
@@ -58,13 +73,13 @@ func (d *Psql) MergeAlbums(ctx context.Context, fromId, toId int32) error {
 	return tx.Commit(ctx)
 }
 
-func (d *Psql) MergeArtists(ctx context.Context, fromId, toId int32) error {
+func (d *Psql) MergeArtists(ctx context.Context, fromId, toId int32, replaceImage bool) error {
 	l := logger.FromContext(ctx)
 	l.Info().Msgf("Merging artist %d into artist %d", fromId, toId)
 	tx, err := d.conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		l.Err(err).Msg("Failed to begin transaction")
-		return err
+		return fmt.Errorf("MergeArtists: %w", err)
 	}
 	defer tx.Rollback(ctx)
 	qtx := d.q.WithTx(tx)
@@ -74,7 +89,7 @@ func (d *Psql) MergeArtists(ctx context.Context, fromId, toId int32) error {
 	})
 	if err != nil {
 		l.Err(err).Msg("Failed to delete conflicting artist tracks")
-		return err
+		return fmt.Errorf("MergeArtists: %w", err)
 	}
 	err = qtx.DeleteConflictingArtistReleases(ctx, repository.DeleteConflictingArtistReleasesParams{
 		ArtistID:   fromId,
@@ -82,7 +97,7 @@ func (d *Psql) MergeArtists(ctx context.Context, fromId, toId int32) error {
 	})
 	if err != nil {
 		l.Err(err).Msg("Failed to delete conflicting artist releases")
-		return err
+		return fmt.Errorf("MergeArtists: %w", err)
 	}
 	err = qtx.UpdateArtistTracks(ctx, repository.UpdateArtistTracksParams{
 		ArtistID:   fromId,
@@ -90,7 +105,7 @@ func (d *Psql) MergeArtists(ctx context.Context, fromId, toId int32) error {
 	})
 	if err != nil {
 		l.Err(err).Msg("Failed to update artist tracks")
-		return err
+		return fmt.Errorf("MergeArtists: %w", err)
 	}
 	err = qtx.UpdateArtistReleases(ctx, repository.UpdateArtistReleasesParams{
 		ArtistID:   fromId,
@@ -98,12 +113,26 @@ func (d *Psql) MergeArtists(ctx context.Context, fromId, toId int32) error {
 	})
 	if err != nil {
 		l.Err(err).Msg("Failed to update artist releases")
-		return err
+		return fmt.Errorf("MergeArtists: %w", err)
+	}
+	if replaceImage {
+		old, err := qtx.GetArtist(ctx, fromId)
+		if err != nil {
+			return fmt.Errorf("MergeAlbums: %w", err)
+		}
+		err = qtx.UpdateArtistImage(ctx, repository.UpdateArtistImageParams{
+			ID:          toId,
+			Image:       old.Image,
+			ImageSource: old.ImageSource,
+		})
+		if err != nil {
+			return fmt.Errorf("MergeAlbums: %w", err)
+		}
 	}
 	err = qtx.CleanOrphanedEntries(ctx)
 	if err != nil {
 		l.Err(err).Msg("Failed to clean orphaned entries")
-		return err
+		return fmt.Errorf("MergeArtists: %w", err)
 	}
 	return tx.Commit(ctx)
 }

@@ -57,6 +57,14 @@ func (d *Psql) GetAlbum(ctx context.Context, opts db.GetAlbumOpts) (*models.Albu
 		return nil, err
 	}
 
+	seconds, err := d.CountTimeListenedToItem(ctx, db.TimeListenedOpts{
+		Period:  db.PeriodAllTime,
+		AlbumID: row.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &models.Album{
 		ID:             row.ID,
 		MbzID:          row.MusicBrainzID,
@@ -64,6 +72,7 @@ func (d *Psql) GetAlbum(ctx context.Context, opts db.GetAlbumOpts) (*models.Albu
 		Image:          row.Image,
 		VariousArtists: row.VariousArtists,
 		ListenCount:    count,
+		TimeListened:   seconds,
 	}, nil
 }
 

@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -17,11 +18,12 @@ import (
 )
 
 type AssociateArtistsOpts struct {
-	ArtistMbzIDs []uuid.UUID
-	ArtistNames  []string
-	ArtistName   string
-	TrackTitle   string
-	Mbzc         mbz.MusicBrainzCaller
+	ArtistMbzIDs  []uuid.UUID
+	ArtistNames   []string
+	ArtistMbidMap []ArtistMbidMap
+	ArtistName    string
+	TrackTitle    string
+	Mbzc          mbz.MusicBrainzCaller
 }
 
 func AssociateArtists(ctx context.Context, d db.DB, opts AssociateArtistsOpts) ([]*models.Artist, error) {
@@ -29,9 +31,19 @@ func AssociateArtists(ctx context.Context, d db.DB, opts AssociateArtistsOpts) (
 
 	var result []*models.Artist
 
-	if len(opts.ArtistMbzIDs) > 0 {
-		l.Debug().Msg("Associating artists by MusicBrainz ID(s)")
-		mbzMatches, err := matchArtistsByMBID(ctx, d, opts)
+	// use mbid map first, as it is the most reliable way to get mbid for artists
+	if len(opts.ArtistMbidMap) > 0 {
+		l.Debug().Msg("Associating artists by MusicBrainz ID(s) mappings")
+		mbzMatches, err := matchArtistsByMBIDMappings(ctx, d, opts)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, mbzMatches...)
+	}
+
+	if len(opts.ArtistMbzIDs) > len(result) {
+		l.Debug().Msg("Associating artists by list of MusicBrainz ID(s)")
+		mbzMatches, err := matchArtistsByMBID(ctx, d, opts, result)
 		if err != nil {
 			return nil, err
 		}
@@ -60,11 +72,82 @@ func AssociateArtists(ctx context.Context, d db.DB, opts AssociateArtistsOpts) (
 	return result, nil
 }
 
-func matchArtistsByMBID(ctx context.Context, d db.DB, opts AssociateArtistsOpts) ([]*models.Artist, error) {
+func matchArtistsByMBIDMappings(ctx context.Context, d db.DB, opts AssociateArtistsOpts) ([]*models.Artist, error) {
+	l := logger.FromContext(ctx)
+	var result []*models.Artist
+
+	for _, a := range opts.ArtistMbidMap {
+		// first, try to get by mbid
+		artist, err := d.GetArtist(ctx, db.GetArtistOpts{
+			MusicBrainzID: a.Mbid,
+		})
+		if err == nil {
+			l.Debug().Msgf("Artist '%s' found by MusicBrainz ID", artist.Name)
+			result = append(result, artist)
+			continue
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("matchArtistsBYMBIDMappings: %w", err)
+		}
+		// then, try to get by mbz name
+		artist, err = d.GetArtist(ctx, db.GetArtistOpts{
+			Name: a.Artist,
+		})
+		if err == nil {
+			l.Debug().Msgf("Artist '%s' found by Name", a.Artist)
+			// ...associate with mbzid if found
+			err = d.UpdateArtist(ctx, db.UpdateArtistOpts{ID: artist.ID, MusicBrainzID: a.Mbid})
+			if err != nil {
+				l.Err(fmt.Errorf("matchArtistsBYMBIDMappings: %w", err)).Msgf("Failed to associate artist '%s' with MusicBrainz ID", artist.Name)
+			} else {
+				artist.MbzID = &a.Mbid
+			}
+			result = append(result, artist)
+			continue
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("matchArtistsBYMBIDMappings: %w", err)
+		}
+
+		// then, try to get by aliases, or create
+		artist, err = resolveAliasOrCreateArtist(ctx, a.Mbid, opts.ArtistNames, d, opts.Mbzc)
+		if err != nil {
+			// if mbz unreachable, just create a new artist with provided name and mbid
+			l.Warn().Msg("MusicBrainz unreachable, creating new artist with provided MusicBrainz ID mapping")
+			var imgid uuid.UUID
+			imgUrl, err := images.GetArtistImage(ctx, images.ArtistImageOpts{
+				Aliases: []string{a.Artist},
+			})
+			if err == nil {
+				imgid = uuid.New()
+				err = DownloadAndCacheImage(ctx, imgid, imgUrl, ImageSourceSize())
+				if err != nil {
+					l.Err(fmt.Errorf("matchArtistsByMBIDMappings: %w", err)).Msgf("Failed to download artist image for artist '%s'", a.Artist)
+					imgid = uuid.Nil
+				}
+			} else {
+				l.Err(fmt.Errorf("matchArtistsByMBIDMappings: %w", err)).Msgf("Failed to get artist image for artist '%s'", a.Artist)
+			}
+			artist, err = d.SaveArtist(ctx, db.SaveArtistOpts{Name: a.Artist, MusicBrainzID: a.Mbid, Image: imgid, ImageSrc: imgUrl})
+			if err != nil {
+				l.Err(fmt.Errorf("matchArtistsByMBIDMappings: %w", err)).Msgf("Failed to create artist '%s' in database", a.Artist)
+				return nil, fmt.Errorf("matchArtistsByMBIDMappings: %w", err)
+			}
+		}
+		result = append(result, artist)
+	}
+	return result, nil
+}
+
+func matchArtistsByMBID(ctx context.Context, d db.DB, opts AssociateArtistsOpts, existing []*models.Artist) ([]*models.Artist, error) {
 	l := logger.FromContext(ctx)
 	var result []*models.Artist
 
 	for _, id := range opts.ArtistMbzIDs {
+		if artistExistsByMbzID(id, existing) || artistExistsByMbzID(id, result) {
+			l.Debug().Msgf("Artist with MusicBrainz ID %s already found, skipping...", id)
+			continue
+		}
 		if id == uuid.Nil {
 			l.Warn().Msg("Provided artist has uuid.Nil MusicBrainzID")
 			return matchArtistsByNames(ctx, opts.ArtistNames, result, d)
@@ -225,6 +308,14 @@ func artistExists(name string, artists []*models.Artist) bool {
 			if strings.EqualFold(name, alias) {
 				return true
 			}
+		}
+	}
+	return false
+}
+func artistExistsByMbzID(id uuid.UUID, artists []*models.Artist) bool {
+	for _, a := range artists {
+		if a.MbzID != nil && *a.MbzID == id {
+			return true
 		}
 	}
 	return false

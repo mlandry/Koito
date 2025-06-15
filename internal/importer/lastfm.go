@@ -97,17 +97,25 @@ func ImportLastFMFile(ctx context.Context, store db.DB, mbzc mbz.MusicBrainzCall
 				l.Debug().Msgf("Skipping import due to import time rules")
 				continue
 			}
+
+			var artistMbidMap []catalog.ArtistMbidMap
+			if artistMbzID != uuid.Nil {
+				artistMbidMap = append(artistMbidMap, catalog.ArtistMbidMap{Artist: track.Artist.Text, Mbid: artistMbzID})
+			}
+
 			opts := catalog.SubmitListenOpts{
-				MbzCaller:      mbzc,
-				Artist:         track.Artist.Text,
-				ArtistMbzIDs:   []uuid.UUID{artistMbzID},
-				TrackTitle:     track.Name,
-				RecordingMbzID: trackMbzID,
-				ReleaseTitle:   album,
-				ReleaseMbzID:   albumMbzID,
-				Client:         "lastfm",
-				Time:           ts,
-				UserID:         1,
+				MbzCaller:          mbzc,
+				Artist:             track.Artist.Text,
+				ArtistNames:        []string{track.Artist.Text},
+				ArtistMbzIDs:       []uuid.UUID{artistMbzID},
+				TrackTitle:         track.Name,
+				RecordingMbzID:     trackMbzID,
+				ReleaseTitle:       album,
+				ReleaseMbzID:       albumMbzID,
+				ArtistMbidMappings: artistMbidMap,
+				Client:             "lastfm",
+				Time:               ts,
+				UserID:             1,
 			}
 			err = catalog.SubmitListen(ctx, store, opts)
 			if err != nil {

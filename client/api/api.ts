@@ -74,13 +74,13 @@ function mergeTracks(from: number, to: number): Promise<Response> {
         method: "POST",
     })
 }
-function mergeAlbums(from: number, to: number): Promise<Response> {
-    return fetch(`/apis/web/v1/merge/albums?from_id=${from}&to_id=${to}`, {
+function mergeAlbums(from: number, to: number, replaceImage: boolean): Promise<Response> {
+    return fetch(`/apis/web/v1/merge/albums?from_id=${from}&to_id=${to}&replace_image=${replaceImage}`, {
         method: "POST",
     })
 }
-function mergeArtists(from: number, to: number): Promise<Response> {
-    return fetch(`/apis/web/v1/merge/artists?from_id=${from}&to_id=${to}`, {
+function mergeArtists(from: number, to: number, replaceImage: boolean): Promise<Response> {
+    return fetch(`/apis/web/v1/merge/artists?from_id=${from}&to_id=${to}&replace_image=${replaceImage}`, {
         method: "POST",
     })
 }
@@ -200,6 +200,7 @@ type Track = {
     image: string
     album_id: number
     musicbrainz_id: string
+    time_listened: number
 }
 type Artist = {
     id: number
@@ -208,6 +209,7 @@ type Artist = {
     aliases: string[]
     listen_count: number
     musicbrainz_id: string
+    time_listened: number
 }
 type Album = {
     id: number,
@@ -217,6 +219,7 @@ type Album = {
     is_various_artists: boolean
     artists: SimpleArtists[]
     musicbrainz_id: string
+    time_listened: number
 }
 type Alias = {
     id: number 

@@ -13,30 +13,33 @@ import (
 )
 
 func TestGetArtist(t *testing.T) {
+	testDataForTopItems(t)
 	ctx := context.Background()
 	mbzId := uuid.MustParse("00000000-0000-0000-0000-000000000001")
-	// Insert test data
-	artist, err := store.SaveArtist(ctx, db.SaveArtistOpts{
-		Name:          "Test Artist",
-		MusicBrainzID: mbzId,
-	})
-	require.NoError(t, err)
 
 	// Test GetArtist by ID
-	result, err := store.GetArtist(ctx, db.GetArtistOpts{ID: artist.ID})
+	result, err := store.GetArtist(ctx, db.GetArtistOpts{ID: 1})
 	require.NoError(t, err)
-	assert.Equal(t, artist.ID, result.ID)
-	assert.Equal(t, "Test Artist", result.Name)
+	assert.EqualValues(t, 1, result.ID)
+	assert.Equal(t, "Artist One", result.Name)
+	assert.EqualValues(t, 4, result.ListenCount)
+	assert.EqualValues(t, 400, result.TimeListened)
 
 	// Test GetArtist by Name
-	result, err = store.GetArtist(ctx, db.GetArtistOpts{Name: artist.Name})
+	result, err = store.GetArtist(ctx, db.GetArtistOpts{Name: "Artist One"})
 	require.NoError(t, err)
-	assert.Equal(t, artist.ID, result.ID)
+	assert.EqualValues(t, 1, result.ID)
+	assert.Equal(t, "Artist One", result.Name)
+	assert.EqualValues(t, 4, result.ListenCount)
+	assert.EqualValues(t, 400, result.TimeListened)
 
 	// Test GetArtist by MusicBrainzID
 	result, err = store.GetArtist(ctx, db.GetArtistOpts{MusicBrainzID: mbzId})
 	require.NoError(t, err)
-	assert.Equal(t, artist.ID, result.ID)
+	assert.EqualValues(t, 1, result.ID)
+	assert.Equal(t, "Artist One", result.Name)
+	assert.EqualValues(t, 4, result.ListenCount)
+	assert.EqualValues(t, 400, result.TimeListened)
 
 	// Test GetArtist with insufficient information
 	_, err = store.GetArtist(ctx, db.GetArtistOpts{})
