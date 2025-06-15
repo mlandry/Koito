@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"bytes"
+	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"path"
@@ -47,18 +49,23 @@ func ImageHandler(store db.DB) http.HandlerFunc {
 			fullSizePath := filepath.Join(cfg.ConfigDir(), catalog.ImageCacheDir, string(catalog.ImageSizeFull), filepath.Clean(filename))
 			largeSizePath := filepath.Join(cfg.ConfigDir(), catalog.ImageCacheDir, string(catalog.ImageSizeLarge), filepath.Clean(filename))
 
+			// this if statement flow is terrible but whatever
 			var sourcePath string
 			if _, err = os.Stat(fullSizePath); os.IsNotExist(err) {
 				if _, err = os.Stat(largeSizePath); os.IsNotExist(err) {
-					l.Warn().Msgf("ImageHandler: Could not find requested image %s. Serving default image", imgid.String())
-					serveDefaultImage(w, r, imageSize)
-					return
+					l.Warn().Msgf("ImageHandler: Could not find requested image %s. Attempting to download from source", imgid.String())
+					sourcePath, err = downloadMissingImage(r.Context(), store, imgid)
+					if err != nil {
+						l.Err(err).Msg("ImageHandler: Failed to redownload missing image")
+						w.WriteHeader(http.StatusInternalServerError)
+					}
 				} else if err != nil {
 					l.Err(err).Msg("ImageHandler: Failed to access source image file at large size")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
+				} else {
+					sourcePath = largeSizePath
 				}
-				sourcePath = largeSizePath
 			} else if err != nil {
 				l.Err(err).Msg("ImageHandler: Failed to access source image file at full size")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -138,4 +145,23 @@ func serveDefaultImage(w http.ResponseWriter, r *http.Request, size catalog.Imag
 
 	l.Debug().Msgf("serveDefaultImage: Successfully serving default image at size '%s'", size)
 	http.ServeFile(w, r, path.Join(cfg.ConfigDir(), catalog.ImageCacheDir, string(size), "default_img"))
+}
+
+// finds the item associated with the image id, downloads it, and saves it in the source path, returning the path to the image
+func downloadMissingImage(ctx context.Context, store db.DB, id uuid.UUID) (string, error) {
+	src, err := store.GetImageSource(ctx, id)
+	if err != nil {
+		return "", fmt.Errorf("downloadMissingImage: store.GetImageSource: %w", err)
+	}
+	var size catalog.ImageSize
+	if cfg.FullImageCacheEnabled() {
+		size = catalog.ImageSizeFull
+	} else {
+		size = catalog.ImageSizeLarge
+	}
+	err = catalog.DownloadAndCacheImage(ctx, id, src, size)
+	if err != nil {
+		return "", fmt.Errorf("downloadMissingImage: catalog.DownloadAndCacheImage: %w", err)
+	}
+	return path.Join(catalog.SourceImageDir(), id.String()), nil
 }
