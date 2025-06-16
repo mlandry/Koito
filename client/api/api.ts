@@ -156,6 +156,9 @@ function setPrimaryAlias(type: string, id: number, alias: string): Promise<Respo
         method: "POST"
     })
 }
+function getAlbum(id: number): Promise<Album> {
+    return fetch(`/apis/web/v1/album?id=${id}`).then(r => r.json() as Promise<Album>)
+}
 
 function deleteListen(listen: Listen): Promise<Response> {
     const ms = new Date(listen.time).getTime()
@@ -191,6 +194,7 @@ export {
     deleteApiKey,
     updateApiKeyLabel,
     deleteListen,
+    getAlbum,
 }
 type Track = {
     id: number

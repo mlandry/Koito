@@ -18,6 +18,9 @@ postgres.start:
 postgres.stop:
 	docker stop koito-db
 
+postgres.remove:
+	docker stop koito-db && docker rm koito-db
+
 api.debug:
 	KOITO_ALLOWED_HOSTS=* KOITO_LOG_LEVEL=debug KOITO_CONFIG_DIR=test_config_dir KOITO_DATABASE_URL=postgres://postgres:secret@localhost:5432?sslmode=disable go run cmd/api/main.go
 

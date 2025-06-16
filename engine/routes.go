@@ -70,6 +70,7 @@ func bindRoutes(
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.ValidateSession(db))
 			r.Post("/replace-image", handlers.ReplaceImageHandler(db))
+			r.Patch("/album", handlers.UpdateAlbumHandler(db))
 			r.Post("/merge/tracks", handlers.MergeTracksHandler(db))
 			r.Post("/merge/albums", handlers.MergeReleaseGroupsHandler(db))
 			r.Post("/merge/artists", handlers.MergeArtistsHandler(db))

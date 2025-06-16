@@ -7,7 +7,8 @@ import { useAppContext } from "~/providers/AppProvider";
 import MergeModal from "~/components/modals/MergeModal";
 import ImageReplaceModal from "~/components/modals/ImageReplaceModal";
 import DeleteModal from "~/components/modals/DeleteModal";
-import RenameModal from "~/components/modals/RenameModal";
+import RenameModal from "~/components/modals/EditModal";
+import EditModal from "~/components/modals/EditModal";
 
 export type MergeFunc = (from: number, to: number, replaceImage: boolean) => Promise<Response>
 export type MergeSearchCleanerFunc = (r: SearchResponse, id: number) => SearchResponse
@@ -79,11 +80,11 @@ export default function MediaLayout(props: Props) {
                     </div>
                     { user &&
                     <div className="absolute left-1 sm:right-1 sm:left-auto -top-9 sm:top-1 flex gap-3 items-center">
-                        <button title="Rename Item" className="hover:cursor-pointer" onClick={() => setRenameModalOpen(true)}><Edit size={iconSize} /></button>
+                        <button title="Edit Item" className="hover:cursor-pointer" onClick={() => setRenameModalOpen(true)}><Edit size={iconSize} /></button>
                         <button title="Replace Image" className="hover:cursor-pointer" onClick={() => setImageModalOpen(true)}><ImageIcon size={iconSize} /></button>
                         <button title="Merge Items" className="hover:cursor-pointer" onClick={() => setMergeModalOpen(true)}><Merge size={iconSize} /></button>
                         <button title="Delete Item" className="hover:cursor-pointer" onClick={() => setDeleteModalOpen(true)}><Trash size={iconSize} /></button>
-                        <RenameModal open={renameModalOpen} setOpen={setRenameModalOpen} type={props.type.toLowerCase()} id={props.id}/>
+                        <EditModal open={renameModalOpen} setOpen={setRenameModalOpen} type={props.type.toLowerCase()} id={props.id}/>
                         <ImageReplaceModal open={imageModalOpen} setOpen={setImageModalOpen} id={props.imgItemId} musicbrainzId={props.musicbrainzId} type={props.type === "Track" ? "Album" : props.type} />
                         <MergeModal currentTitle={props.title} mergeFunc={props.mergeFunc} mergeCleanerFunc={props.mergeCleanerFunc} type={props.type} currentId={props.id} open={mergeModalOpen} setOpen={setMergeModalOpen} />
                         <DeleteModal open={deleteModalOpen} setOpen={setDeleteModalOpen} title={props.title} id={props.id} type={props.type} />

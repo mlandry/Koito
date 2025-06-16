@@ -104,6 +104,10 @@ LIMIT $1;
 UPDATE releases SET musicbrainz_id = $2
 WHERE id = $1;
 
+-- name: UpdateReleaseVariousArtists :exec
+UPDATE releases SET various_artists = $2
+WHERE id = $1;
+
 -- name: UpdateReleaseImage :exec
 UPDATE releases SET image = $2, image_source = $3
 WHERE id = $1;
