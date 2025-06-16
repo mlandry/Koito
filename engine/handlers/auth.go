@@ -20,7 +20,12 @@ func LoginHandler(store db.DB) http.HandlerFunc {
 
 		l.Debug().Msg("LoginHandler: Received login request")
 
-		r.ParseForm()
+		err := r.ParseForm()
+		if err != nil {
+			l.Debug().Msg("LoginHandler: Failed to parse request form")
+			utils.WriteError(w, "failed to parse request", http.StatusInternalServerError)
+			return
+		}
 		username := r.FormValue("username")
 		password := r.FormValue("password")
 		if username == "" || password == "" {
@@ -149,12 +154,22 @@ func UpdateUserHandler(store db.DB) http.HandlerFunc {
 			return
 		}
 
-		r.ParseForm()
+		err := r.ParseForm()
+		if err != nil {
+			l.Err(err).Msg("UpdateUserHandler: Failed to parse request form")
+			utils.WriteError(w, "failed to parse request", http.StatusInternalServerError)
+			return
+		}
 		username := r.FormValue("username")
 		password := r.FormValue("password")
 
+		if username == "" && password == "" {
+			l.Debug().Msg("UpdateUserHandler: No parameters were recieved")
+			utils.WriteError(w, "all parameters missing", http.StatusBadRequest)
+			return
+		}
 		l.Debug().Msgf("UpdateUserHandler: Updating user with ID %d", u.ID)
-		err := store.UpdateUser(ctx, db.UpdateUserOpts{
+		err = store.UpdateUser(ctx, db.UpdateUserOpts{
 			ID:       u.ID,
 			Username: username,
 			Password: password,

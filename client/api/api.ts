@@ -85,8 +85,13 @@ function mergeArtists(from: number, to: number, replaceImage: boolean): Promise<
     })
 }
 function login(username: string, password: string, remember: boolean): Promise<Response> {
-    return fetch(`/apis/web/v1/login?username=${username}&password=${password}&remember_me=${remember}`, {
+    const form = new URLSearchParams 
+    form.append('username', username)
+    form.append('password', password)
+    form.append('remember_me', String(remember))
+    return fetch(`/apis/web/v1/login`, {
         method: "POST",
+        body: form,
     })
 }
 function logout(): Promise<Response> {
@@ -99,8 +104,11 @@ function getApiKeys(): Promise<ApiKey[]> {
     return fetch(`/apis/web/v1/user/apikeys`).then((r) => r.json() as Promise<ApiKey[]>)
 }
 const createApiKey = async (label: string): Promise<ApiKey> => {
-    const r = await fetch(`/apis/web/v1/user/apikeys?label=${label}`, {
-        method: "POST"
+    const form = new URLSearchParams 
+    form.append('label', label)
+    const r = await fetch(`/apis/web/v1/user/apikeys`, {
+        method: "POST",
+        body: form,
     });
     if (!r.ok) {
         let errorMessage = `error: ${r.status}`;
@@ -134,8 +142,12 @@ function deleteItem(itemType: string, id: number): Promise<Response> {
     })
 }
 function updateUser(username: string, password: string) {
-    return fetch(`/apis/web/v1/user?username=${username}&password=${password}`, {
-        method: "PATCH"
+    const form = new URLSearchParams 
+    form.append('username', username)
+    form.append('password', password)
+    return fetch(`/apis/web/v1/user`, {
+        method: "PATCH",
+        body: form,
     })
 }
 function getAliases(type: string, id: number): Promise<Alias[]> {
