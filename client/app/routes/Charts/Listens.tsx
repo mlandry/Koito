@@ -4,6 +4,7 @@ import { deleteListen, type Listen, type PaginatedResponse } from "api/api";
 import { timeSince } from "~/utils/utils";
 import ArtistLinks from "~/components/ArtistLinks";
 import { useState } from "react";
+import { useAppContext } from "~/providers/AppProvider";
 
 export async function clientLoader({ request }: LoaderFunctionArgs) {
     const url = new URL(request.url);
@@ -25,6 +26,7 @@ export default function Listens() {
     const { listens: initialData } = useLoaderData<{ listens: PaginatedResponse<Listen> }>();
 
     const [items, setItems] = useState<Listen[] | null>(null)
+    const { user } = useAppContext()
 
     const handleDelete = async (listen: Listen) => {
         if (!initialData) return 
@@ -61,11 +63,12 @@ export default function Listens() {
                     <tbody>
                         {listens.map((item) => (
                             <tr key={`last_listen_${item.time}`} className="group hover:bg-[--color-bg-secondary]">
-                                <td className="w-[1px] pr-2 align-middle">
+                                <td className="w-[17px] pr-2 align-middle">
                                     <button
                                         onClick={() => handleDelete(item)}
                                         className="opacity-0 group-hover:opacity-100 transition-opacity text-(--color-fg-tertiary) hover:text-(--color-error)"
                                         aria-label="Delete"
+                                        hidden={user === null || user === undefined}
                                     >
                                         ×
                                     </button>

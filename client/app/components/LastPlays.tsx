@@ -4,6 +4,7 @@ import { timeSince } from "~/utils/utils"
 import ArtistLinks from "./ArtistLinks"
 import { deleteListen, getLastListens, type getItemsArgs, type Listen } from "api/api"
 import { Link } from "react-router"
+import { useAppContext } from "~/providers/AppProvider"
 
 interface Props {
     limit: number
@@ -14,6 +15,8 @@ interface Props {
 }
 
 export default function LastPlays(props: Props) {
+    const { user } = useAppContext()
+    console.log(user)
     const { isPending, isError, data, error } = useQuery({
         queryKey: ['last-listens', {
             limit: props.limit,
@@ -69,11 +72,12 @@ export default function LastPlays(props: Props) {
                 <tbody>
                     {listens.map((item) => (
                         <tr key={`last_listen_${item.time}`} className="group hover:bg-[--color-bg-secondary]">
-                            <td className="w-[1px] pr-2 align-middle">
+                            <td className="w-[18px] pr-2 align-middle" >
                                 <button
                                     onClick={() => handleDelete(item)}
                                     className="opacity-0 group-hover:opacity-100 transition-opacity text-(--color-fg-tertiary) hover:text-(--color-error)"
                                     aria-label="Delete"
+                                    hidden={user === null || user === undefined}
                                 >
                                     ×
                                 </button>
