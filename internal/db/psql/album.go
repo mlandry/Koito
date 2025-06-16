@@ -200,6 +200,16 @@ func (d *Psql) UpdateAlbum(ctx context.Context, opts db.UpdateAlbumOpts) error {
 			return err
 		}
 	}
+	if opts.VariousArtistsUpdate {
+		l.Debug().Msgf("Updating release with ID %d with image %s", opts.ID, opts.Image)
+		err := qtx.UpdateReleaseVariousArtists(ctx, repository.UpdateReleaseVariousArtistsParams{
+			ID:             opts.ID,
+			VariousArtists: opts.VariousArtistsValue,
+		})
+		if err != nil {
+			return err
+		}
+	}
 	return tx.Commit(ctx)
 }
 

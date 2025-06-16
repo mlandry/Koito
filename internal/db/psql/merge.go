@@ -19,12 +19,36 @@ func (d *Psql) MergeTracks(ctx context.Context, fromId, toId int32) error {
 	}
 	defer tx.Rollback(ctx)
 	qtx := d.q.WithTx(tx)
+	from, err := qtx.GetTrack(ctx, fromId)
+	if err != nil {
+		return fmt.Errorf("MergeTracks: GetTrack: %w", err)
+	}
+	to, err := qtx.GetTrack(ctx, toId)
+	if err != nil {
+		return fmt.Errorf("MergeTracks: GetTrack: %w", err)
+	}
 	err = qtx.UpdateTrackIdForListens(ctx, repository.UpdateTrackIdForListensParams{
 		TrackID:   fromId,
 		TrackID_2: toId,
 	})
 	if err != nil {
-		return fmt.Errorf("MergeTracks: %w", err)
+		return fmt.Errorf("MergeTracks: UpdateTrackIdForListens: %w", err)
+	}
+	if from.ReleaseID != to.ReleaseID {
+		// tracks are from different releases, track artist should be associated with to.release
+		artists, err := qtx.GetTrackArtists(ctx, fromId)
+		if err != nil {
+			return fmt.Errorf("MergeTracks: GetTrackArtists: %w", err)
+		}
+		for _, artist := range artists {
+			err = qtx.AssociateArtistToRelease(ctx, repository.AssociateArtistToReleaseParams{
+				ArtistID:  artist.ID,
+				ReleaseID: to.ReleaseID,
+			})
+			if err != nil {
+				return fmt.Errorf("MergeTracks: AssociateArtistToRelease: %w", err)
+			}
+		}
 	}
 	err = qtx.CleanOrphanedEntries(ctx)
 	if err != nil {
@@ -44,6 +68,12 @@ func (d *Psql) MergeAlbums(ctx context.Context, fromId, toId int32, replaceImage
 	}
 	defer tx.Rollback(ctx)
 	qtx := d.q.WithTx(tx)
+
+	fromArtists, err := qtx.GetReleaseArtists(ctx, fromId)
+	if err != nil {
+		return fmt.Errorf("MergeTracks: GetReleaseArtists: %w", err)
+	}
+
 	err = qtx.UpdateReleaseForAll(ctx, repository.UpdateReleaseForAllParams{
 		ReleaseID:   fromId,
 		ReleaseID_2: toId,
@@ -65,10 +95,21 @@ func (d *Psql) MergeAlbums(ctx context.Context, fromId, toId int32, replaceImage
 			return fmt.Errorf("MergeAlbums: %w", err)
 		}
 	}
+
+	for _, artist := range fromArtists {
+		err = qtx.AssociateArtistToRelease(ctx, repository.AssociateArtistToReleaseParams{
+			ArtistID:  artist.ID,
+			ReleaseID: toId,
+		})
+		if err != nil {
+			return fmt.Errorf("MergeAlbums: AssociateArtistToRelease: %w", err)
+		}
+	}
+
 	err = qtx.CleanOrphanedEntries(ctx)
 	if err != nil {
 		l.Err(err).Msg("Failed to clean orphaned entries")
-		return err
+		return fmt.Errorf("MergeAlbums: CleanOrphanedEntries: %w", err)
 	}
 	return tx.Commit(ctx)
 }

@@ -96,10 +96,12 @@ type UpdateArtistOpts struct {
 }
 
 type UpdateAlbumOpts struct {
-	ID            int32
-	MusicBrainzID uuid.UUID
-	Image         uuid.UUID
-	ImageSrc      string
+	ID                   int32
+	MusicBrainzID        uuid.UUID
+	Image                uuid.UUID
+	ImageSrc             string
+	VariousArtistsUpdate bool
+	VariousArtistsValue  bool
 }
 
 type UpdateUserOpts struct {

@@ -460,3 +460,18 @@ func (q *Queries) UpdateReleaseMbzID(ctx context.Context, arg UpdateReleaseMbzID
 	_, err := q.db.Exec(ctx, updateReleaseMbzID, arg.ID, arg.MusicBrainzID)
 	return err
 }
+
+const updateReleaseVariousArtists = `-- name: UpdateReleaseVariousArtists :exec
+UPDATE releases SET various_artists = $2
+WHERE id = $1
+`
+
+type UpdateReleaseVariousArtistsParams struct {
+	ID             int32
+	VariousArtists bool
+}
+
+func (q *Queries) UpdateReleaseVariousArtists(ctx context.Context, arg UpdateReleaseVariousArtistsParams) error {
+	_, err := q.db.Exec(ctx, updateReleaseVariousArtists, arg.ID, arg.VariousArtists)
+	return err
+}

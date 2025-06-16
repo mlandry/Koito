@@ -116,10 +116,12 @@ func TestUpdateAlbum(t *testing.T) {
 	newMbzID := uuid.New()
 	imgid := uuid.New()
 	err = store.UpdateAlbum(ctx, db.UpdateAlbumOpts{
-		ID:            rg.ID,
-		MusicBrainzID: newMbzID,
-		Image:         imgid,
-		ImageSrc:      catalog.ImageSourceUserUpload,
+		ID:                   rg.ID,
+		MusicBrainzID:        newMbzID,
+		Image:                imgid,
+		ImageSrc:             catalog.ImageSourceUserUpload,
+		VariousArtistsUpdate: true,
+		VariousArtistsValue:  true,
 	})
 	require.NoError(t, err)
 
@@ -127,6 +129,7 @@ func TestUpdateAlbum(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, newMbzID, *result.MbzID)
 	assert.Equal(t, imgid, *result.Image)
+	assert.True(t, result.VariousArtists)
 
 	truncateTestData(t)
 }
