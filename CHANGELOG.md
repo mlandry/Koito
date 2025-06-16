@@ -1,6 +1,5 @@
-# v0.0.6
-## Features
-- Albums can now be marked as Various Artists
-
+# v0.0.7
 ## Fixes
-- Artists will now be correctly associated with merged items
+- Login form now correctly handles special characters
+- Update User form now correctly handles special characters
+- Delete Listen button is now hidden when not logged in
