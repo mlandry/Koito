@@ -8,12 +8,7 @@ SELECT
   l.*,
   t.title AS track_title,
   t.release_id AS release_id,
-  (
-    SELECT json_agg(json_build_object('id', a.id, 'name', a.name))
-    FROM artist_tracks at
-    JOIN artists_with_name a ON a.id = at.artist_id
-    WHERE at.track_id = t.id
-  ) AS artists
+  get_artists_for_track(t.id) AS artists
 FROM listens l
 JOIN tracks_with_title t ON l.track_id = t.id
 WHERE l.listened_at BETWEEN $1 AND $2
@@ -25,12 +20,7 @@ SELECT
   l.*,
   t.title AS track_title,
   t.release_id AS release_id,
-  (
-    SELECT json_agg(json_build_object('id', a.id, 'name', a.name))
-    FROM artist_tracks at
-    JOIN artists_with_name a ON a.id = at.artist_id
-    WHERE at.track_id = t.id
-  ) AS artists
+  get_artists_for_track(t.id) AS artists
 FROM listens l
 JOIN tracks_with_title t ON l.track_id = t.id
 JOIN artist_tracks at ON t.id = at.track_id 
@@ -44,12 +34,7 @@ SELECT
   l.*,
   t.title AS track_title,
   t.release_id AS release_id,
-  (
-    SELECT json_agg(json_build_object('id', a.id, 'name', a.name))
-    FROM artist_tracks at
-    JOIN artists_with_name a ON a.id = at.artist_id
-    WHERE at.track_id = t.id
-  ) AS artists
+  get_artists_for_track(t.id) AS artists
 FROM listens l
 JOIN tracks_with_title t ON l.track_id = t.id
 WHERE l.listened_at BETWEEN $1 AND $2
@@ -62,12 +47,7 @@ SELECT
   l.*,
   t.title AS track_title,
   t.release_id AS release_id,
-  (
-    SELECT json_agg(json_build_object('id', a.id, 'name', a.name))
-    FROM artist_tracks at
-    JOIN artists_with_name a ON a.id = at.artist_id
-    WHERE at.track_id = t.id
-  ) AS artists
+  get_artists_for_track(t.id) AS artists
 FROM listens l
 JOIN tracks_with_title t ON l.track_id = t.id
 WHERE l.listened_at BETWEEN $1 AND $2

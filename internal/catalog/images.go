@@ -82,17 +82,17 @@ func SourceImageDir() string {
 func ValidateImageURL(url string) error {
 	resp, err := http.Head(url)
 	if err != nil {
-		return fmt.Errorf("failed to perform HEAD request: %w", err)
+		return fmt.Errorf("ValidateImageURL: http.Head: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HEAD request failed, status code: %d", resp.StatusCode)
+		return fmt.Errorf("ValidateImageURL: HEAD request failed, status code: %d", resp.StatusCode)
 	}
 
 	contentType := resp.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "image/") {
-		return fmt.Errorf("URL does not point to an image, content type: %s", contentType)
+		return fmt.Errorf("ValidateImageURL: URL does not point to an image, content type: %s", contentType)
 	}
 
 	return nil
@@ -103,20 +103,24 @@ func DownloadAndCacheImage(ctx context.Context, id uuid.UUID, url string, size I
 	l := logger.FromContext(ctx)
 	err := ValidateImageURL(url)
 	if err != nil {
-		return err
+		return fmt.Errorf("DownloadAndCacheImage: %w", err)
 	}
 	l.Debug().Msgf("Downloading image for ID %s", id)
 	resp, err := http.Get(url)
 	if err != nil {
-		return fmt.Errorf("failed to download image: %w", err)
+		return fmt.Errorf("DownloadAndCacheImage: http.Get: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to download image, status code: %d", resp.StatusCode)
+		return fmt.Errorf("DownloadAndCacheImage: failed to download image, status: %s", resp.Status)
 	}
 
-	return CompressAndSaveImage(ctx, id.String(), size, resp.Body)
+	err = CompressAndSaveImage(ctx, id.String(), size, resp.Body)
+	if err != nil {
+		return fmt.Errorf("DownloadAndCacheImage: %w", err)
+	}
+	return nil
 }
 
 // Compresses an image to the specified size, then saves it to the correct cache folder.
@@ -124,16 +128,24 @@ func CompressAndSaveImage(ctx context.Context, filename string, size ImageSize, 
 	l := logger.FromContext(ctx)
 
 	if size == ImageSizeFull {
-		return saveImage(filename, size, body)
+		err := saveImage(filename, size, body)
+		if err != nil {
+			return fmt.Errorf("CompressAndSaveImage: %w", err)
+		}
+		return nil
 	}
 
 	l.Debug().Msg("Creating resized image")
 	compressed, err := compressImage(size, body)
 	if err != nil {
-		return err
+		return fmt.Errorf("CompressAndSaveImage: %w", err)
 	}
 
-	return saveImage(filename, size, compressed)
+	err = saveImage(filename, size, compressed)
+	if err != nil {
+		return fmt.Errorf("CompressAndSaveImage: %w", err)
+	}
+	return nil
 }
 
 // SaveImage saves an image to the image_cache/{size} folder
@@ -144,21 +156,21 @@ func saveImage(filename string, size ImageSize, data io.Reader) error {
 	// Ensure the cache directory exists
 	err := os.MkdirAll(filepath.Join(cacheDir, string(size)), 0744)
 	if err != nil {
-		return fmt.Errorf("failed to create full image cache directory: %w", err)
+		return fmt.Errorf("saveImage: failed to create full image cache directory: %w", err)
 	}
 
 	// Create a file in the cache directory
 	imagePath := filepath.Join(cacheDir, string(size), filename)
 	file, err := os.Create(imagePath)
 	if err != nil {
-		return fmt.Errorf("failed to create image file: %w", err)
+		return fmt.Errorf("saveImage: failed to create image file: %w", err)
 	}
 	defer file.Close()
 
 	// Save the image to the file
 	_, err = io.Copy(file, data)
 	if err != nil {
-		return fmt.Errorf("failed to save image: %w", err)
+		return fmt.Errorf("saveImage: failed to save image: %w", err)
 	}
 
 	return nil
@@ -167,7 +179,7 @@ func saveImage(filename string, size ImageSize, data io.Reader) error {
 func compressImage(size ImageSize, data io.Reader) (io.Reader, error) {
 	imgBytes, err := io.ReadAll(data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("compressImage: io.ReadAll: %w", err)
 	}
 	px := GetImageSize(size)
 	// Resize with bimg
@@ -180,10 +192,10 @@ func compressImage(size ImageSize, data io.Reader) (io.Reader, error) {
 		Type:          bimg.WEBP,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("compressImage: bimg.NewImage: %w", err)
 	}
 	if len(imgBytes) == 0 {
-		return nil, fmt.Errorf("compression failed")
+		return nil, fmt.Errorf("compressImage: failed to compress image: %w", err)
 	}
 	return bytes.NewReader(imgBytes), nil
 }
@@ -198,19 +210,19 @@ func DeleteImage(filename uuid.UUID) error {
 	// }
 	err := os.Remove(path.Join(cacheDir, "full", filename.String()))
 	if err != nil && !os.IsNotExist(err) {
-		return err
+		return fmt.Errorf("DeleteImage: %w", err)
 	}
 	err = os.Remove(path.Join(cacheDir, "large", filename.String()))
 	if err != nil && !os.IsNotExist(err) {
-		return err
+		return fmt.Errorf("DeleteImage: %w", err)
 	}
 	err = os.Remove(path.Join(cacheDir, "medium", filename.String()))
 	if err != nil && !os.IsNotExist(err) {
-		return err
+		return fmt.Errorf("DeleteImage: %w", err)
 	}
 	err = os.Remove(path.Join(cacheDir, "small", filename.String()))
 	if err != nil && !os.IsNotExist(err) {
-		return err
+		return fmt.Errorf("DeleteImage: %w", err)
 	}
 	return nil
 }
@@ -230,7 +242,7 @@ func PruneOrphanedImages(ctx context.Context, store db.DB) error {
 	for _, dir := range []string{"large", "medium", "small", "full"} {
 		c, err := pruneDirImgs(ctx, store, path.Join(cacheDir, dir), memo)
 		if err != nil {
-			return err
+			return fmt.Errorf("PruneOrphanedImages: %w", err)
 		}
 		count += c
 	}
@@ -256,7 +268,7 @@ func pruneDirImgs(ctx context.Context, store db.DB, path string, memo map[string
 		}
 		exists, err := store.ImageHasAssociation(ctx, imageid)
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("pruneDirImages: %w", err)
 		} else if exists {
 			continue
 		}

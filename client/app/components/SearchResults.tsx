@@ -16,7 +16,7 @@ export default function SearchResults({ data, onSelect, selectorMode }: Props) {
     const selectItem = (title: string, id: number) => {
         if (selected === id) {
             setSelected(0)
-            onSelect({id: id, title: title})
+            onSelect({id: 0, title: ''})
         } else {
             setSelected(id)
             onSelect({id: id, title: title})

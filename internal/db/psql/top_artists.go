@@ -2,6 +2,7 @@ package psql
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/gabehf/koito/internal/db"
@@ -16,7 +17,7 @@ func (d *Psql) GetTopArtistsPaginated(ctx context.Context, opts db.GetItemsOpts)
 	offset := (opts.Page - 1) * opts.Limit
 	t1, t2, err := utils.DateRange(opts.Week, opts.Month, opts.Year)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetTopArtistsPaginated: %w", err)
 	}
 	if opts.Month == 0 && opts.Year == 0 {
 		// use period, not date range
@@ -35,7 +36,7 @@ func (d *Psql) GetTopArtistsPaginated(ctx context.Context, opts db.GetItemsOpts)
 		Offset:       int32(offset),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetTopArtistsPaginated: GetTopArtistsPaginated: %w", err)
 	}
 	rgs := make([]*models.Artist, len(rows))
 	for i, row := range rows {
@@ -53,7 +54,7 @@ func (d *Psql) GetTopArtistsPaginated(ctx context.Context, opts db.GetItemsOpts)
 		ListenedAt_2: t2,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetTopArtistsPaginated: CountTopArtists: %w", err)
 	}
 	l.Debug().Msgf("Database responded with %d artists out of a total %d", len(rows), count)
 

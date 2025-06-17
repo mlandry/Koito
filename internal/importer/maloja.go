@@ -3,6 +3,7 @@ package importer
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -37,7 +38,7 @@ func ImportMalojaFile(ctx context.Context, store db.DB, filename string) error {
 	file, err := os.Open(path.Join(cfg.ConfigDir(), "import", filename))
 	if err != nil {
 		l.Err(err).Msgf("Failed to read import file: %s", filename)
-		return err
+		return fmt.Errorf("ImportMalojaFile: %w", err)
 	}
 	defer file.Close()
 	var throttleFunc = func() {}
@@ -49,7 +50,7 @@ func ImportMalojaFile(ctx context.Context, store db.DB, filename string) error {
 	export := new(MalojaExport)
 	err = json.NewDecoder(file).Decode(&export)
 	if err != nil {
-		return err
+		return fmt.Errorf("ImportMalojaFile: %w", err)
 	}
 	for _, item := range export.Scrobbles {
 		martists := make([]string, 0)
@@ -71,19 +72,20 @@ func ImportMalojaFile(ctx context.Context, store db.DB, filename string) error {
 			continue
 		}
 		opts := catalog.SubmitListenOpts{
-			MbzCaller:    &mbz.MusicBrainzClient{},
-			Artist:       item.Track.Artists[0],
-			ArtistNames:  artists,
-			TrackTitle:   item.Track.Title,
-			ReleaseTitle: item.Track.Album.Title,
-			Time:         ts.Local(),
-			Client:       "maloja",
-			UserID:       1,
+			MbzCaller:      &mbz.MusicBrainzClient{},
+			Artist:         item.Track.Artists[0],
+			ArtistNames:    artists,
+			TrackTitle:     item.Track.Title,
+			ReleaseTitle:   item.Track.Album.Title,
+			Time:           ts.Local(),
+			Client:         "maloja",
+			UserID:         1,
+			SkipCacheImage: !cfg.FetchImagesDuringImport(),
 		}
 		err = catalog.SubmitListen(ctx, store, opts)
 		if err != nil {
 			l.Err(err).Msg("Failed to import maloja playback item")
-			return err
+			return fmt.Errorf("ImportMalojaFile: %w", err)
 		}
 		throttleFunc()
 	}

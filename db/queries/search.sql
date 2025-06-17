@@ -42,12 +42,7 @@ SELECT
     ranked.release_id,
     ranked.image,
     ranked.score,
-    (
-        SELECT json_agg(json_build_object('id', a.id, 'name', a.name))
-        FROM artist_tracks at
-        JOIN artists_with_name a ON a.id = at.artist_id
-        WHERE at.track_id = ranked.id
-    ) AS artists
+    get_artists_for_track(ranked.id) AS artists
 FROM (
     SELECT
         t.id,
@@ -74,12 +69,7 @@ SELECT
     ranked.release_id,
     ranked.image,
     ranked.score,
-    (
-        SELECT json_agg(json_build_object('id', a.id, 'name', a.name))
-        FROM artist_tracks at
-        JOIN artists_with_name a ON a.id = at.artist_id
-        WHERE at.track_id = ranked.id
-    ) AS artists
+    get_artists_for_track(ranked.id) AS artists
 FROM (
     SELECT
         t.id,
@@ -106,12 +96,7 @@ SELECT
     ranked.image,
     ranked.various_artists,
     ranked.score,
-    (
-        SELECT json_agg(DISTINCT jsonb_build_object('id', a.id, 'name', a.name))
-        FROM artists_with_name a
-        JOIN artist_releases ar ON ar.artist_id = a.id
-        WHERE ar.release_id = ranked.id
-    ) AS artists
+    get_artists_for_release(ranked.id) AS artists
 FROM (
     SELECT
         r.id,
@@ -137,12 +122,7 @@ SELECT
     ranked.image,
     ranked.various_artists,
     ranked.score,
-    (
-        SELECT json_agg(DISTINCT jsonb_build_object('id', a.id, 'name', a.name))
-        FROM artists_with_name a
-        JOIN artist_releases ar ON ar.artist_id = a.id
-        WHERE ar.release_id = ranked.id
-    ) AS artists
+    get_artists_for_release(ranked.id) AS artists
 FROM (
     SELECT
         r.id,

@@ -3,6 +3,7 @@ package psql
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -23,7 +24,7 @@ func (d *Psql) GetTrack(ctx context.Context, opts db.GetTrackOpts) (*models.Trac
 		l.Debug().Msgf("Fetching track from DB with id %d", opts.ID)
 		t, err := d.q.GetTrack(ctx, opts.ID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetTrack: GetTrack By ID: %w", err)
 		}
 		track = models.Track{
 			ID:       t.ID,
@@ -37,7 +38,7 @@ func (d *Psql) GetTrack(ctx context.Context, opts db.GetTrackOpts) (*models.Trac
 		l.Debug().Msgf("Fetching track from DB with MusicBrainz ID %s", opts.MusicBrainzID)
 		t, err := d.q.GetTrackByMbzID(ctx, &opts.MusicBrainzID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetTrack: GetTrackByMbzID: %w", err)
 		}
 		track = models.Track{
 			ID:       t.ID,
@@ -53,7 +54,7 @@ func (d *Psql) GetTrack(ctx context.Context, opts db.GetTrackOpts) (*models.Trac
 			Column2: opts.ArtistIDs,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetTrack: GetTrackByTitleAndArtists: %w", err)
 		}
 		track = models.Track{
 			ID:       t.ID,
@@ -63,7 +64,7 @@ func (d *Psql) GetTrack(ctx context.Context, opts db.GetTrackOpts) (*models.Trac
 			Duration: t.Duration,
 		}
 	} else {
-		return nil, errors.New("insufficient information to get track")
+		return nil, errors.New("GetTrack: insufficient information to get track")
 	}
 
 	count, err := d.q.CountListensFromTrack(ctx, repository.CountListensFromTrackParams{
@@ -72,7 +73,7 @@ func (d *Psql) GetTrack(ctx context.Context, opts db.GetTrackOpts) (*models.Trac
 		TrackID:      track.ID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetTrack: CountListensFromTrack: %w", err)
 	}
 
 	seconds, err := d.CountTimeListenedToItem(ctx, db.TimeListenedOpts{
@@ -80,7 +81,7 @@ func (d *Psql) GetTrack(ctx context.Context, opts db.GetTrackOpts) (*models.Trac
 		TrackID: track.ID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetTrack: CountTimeListenedToItem: %w", err)
 	}
 
 	track.ListenCount = count
@@ -97,20 +98,20 @@ func (d *Psql) SaveTrack(ctx context.Context, opts db.SaveTrackOpts) (*models.Tr
 		insertMbzID = &opts.RecordingMbzID
 	}
 	if len(opts.ArtistIDs) < 1 {
-		return nil, errors.New("required parameter 'ArtistIDs' missing")
+		return nil, errors.New("SaveTrack: required parameter 'ArtistIDs' missing")
 	}
 	for _, aid := range opts.ArtistIDs {
 		if aid == 0 {
-			return nil, errors.New("none of 'ArtistIDs' may be 0")
+			return nil, errors.New("SaveTrack: none of 'ArtistIDs' may be 0")
 		}
 	}
 	if opts.AlbumID == 0 {
-		return nil, errors.New("required parameter 'AlbumID' missing")
+		return nil, errors.New("SaveTrack: required parameter 'AlbumID' missing")
 	}
 	tx, err := d.conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		l.Err(err).Msg("Failed to begin transaction")
-		return nil, err
+		return nil, fmt.Errorf("SaveTrack: BeginTx: %w", err)
 	}
 	defer tx.Rollback(ctx)
 	qtx := d.q.WithTx(tx)
@@ -120,7 +121,7 @@ func (d *Psql) SaveTrack(ctx context.Context, opts db.SaveTrackOpts) (*models.Tr
 		ReleaseID:     opts.AlbumID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("SaveTrack: InsertTrack: %w", err)
 	}
 	// insert associated artists
 	for _, aid := range opts.ArtistIDs {
@@ -129,7 +130,7 @@ func (d *Psql) SaveTrack(ctx context.Context, opts db.SaveTrackOpts) (*models.Tr
 			TrackID:  trackRow.ID,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("SaveTrack: AssociateArtistToTrack: %w", err)
 		}
 	}
 	// insert primary alias
@@ -140,11 +141,11 @@ func (d *Psql) SaveTrack(ctx context.Context, opts db.SaveTrackOpts) (*models.Tr
 		IsPrimary: true,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("SaveTrack: InsertTrackAlias: %w", err)
 	}
 	err = tx.Commit(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("SaveTrack: Commit: %w", err)
 	}
 	return &models.Track{
 		ID:    trackRow.ID,
@@ -156,12 +157,12 @@ func (d *Psql) SaveTrack(ctx context.Context, opts db.SaveTrackOpts) (*models.Tr
 func (d *Psql) UpdateTrack(ctx context.Context, opts db.UpdateTrackOpts) error {
 	l := logger.FromContext(ctx)
 	if opts.ID == 0 {
-		return errors.New("track id not specified")
+		return errors.New("UpdateTrack: track id not specified")
 	}
 	tx, err := d.conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		l.Err(err).Msg("Failed to begin transaction")
-		return err
+		return fmt.Errorf("UpdateTrack: BeginTx: %w", err)
 	}
 	defer tx.Rollback(ctx)
 	qtx := d.q.WithTx(tx)
@@ -172,7 +173,7 @@ func (d *Psql) UpdateTrack(ctx context.Context, opts db.UpdateTrackOpts) error {
 			MusicBrainzID: &opts.MusicBrainzID,
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("UpdateTrack: UpdateTrackMbzID: %w", err)
 		}
 	}
 	if opts.Duration != 0 {
@@ -182,7 +183,7 @@ func (d *Psql) UpdateTrack(ctx context.Context, opts db.UpdateTrackOpts) error {
 			Duration: opts.Duration,
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("UpdateTrack: UpdateTrackDuration: %w", err)
 		}
 	}
 	return tx.Commit(ctx)
@@ -191,18 +192,18 @@ func (d *Psql) UpdateTrack(ctx context.Context, opts db.UpdateTrackOpts) error {
 func (d *Psql) SaveTrackAliases(ctx context.Context, id int32, aliases []string, source string) error {
 	l := logger.FromContext(ctx)
 	if id == 0 {
-		return errors.New("track id not specified")
+		return errors.New("SaveTrackAliases: track id not specified")
 	}
 	tx, err := d.conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		l.Err(err).Msg("Failed to begin transaction")
-		return err
+		return fmt.Errorf("SaveTrackAliases: BeginTx: %w", err)
 	}
 	defer tx.Rollback(ctx)
 	qtx := d.q.WithTx(tx)
 	existing, err := qtx.GetAllTrackAliases(ctx, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("SaveTrackAliases: GetAllTrackAliases: %w", err)
 	}
 	for _, v := range existing {
 		aliases = append(aliases, v.Alias)
@@ -219,7 +220,7 @@ func (d *Psql) SaveTrackAliases(ctx context.Context, id int32, aliases []string,
 			IsPrimary: false,
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("SaveTrackAliases: InsertTrackAlias: %w", err)
 		}
 	}
 	return tx.Commit(ctx)
@@ -239,7 +240,7 @@ func (d *Psql) DeleteTrackAlias(ctx context.Context, id int32, alias string) err
 func (d *Psql) GetAllTrackAliases(ctx context.Context, id int32) ([]models.Alias, error) {
 	rows, err := d.q.GetAllTrackAliases(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetAllTrackAliases: GetAllTrackAliases: %w", err)
 	}
 	aliases := make([]models.Alias, len(rows))
 	for i, row := range rows {
@@ -261,14 +262,14 @@ func (d *Psql) SetPrimaryTrackAlias(ctx context.Context, id int32, alias string)
 	tx, err := d.conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		l.Err(err).Msg("Failed to begin transaction")
-		return err
+		return fmt.Errorf("SetPrimaryTrackAlias: BeginTx: %w", err)
 	}
 	defer tx.Rollback(ctx)
 	qtx := d.q.WithTx(tx)
 	// get all aliases
 	aliases, err := qtx.GetAllTrackAliases(ctx, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("SetPrimaryTrackAlias: GetAllTrackAliases: %w", err)
 	}
 	primary := ""
 	exists := false
@@ -293,7 +294,7 @@ func (d *Psql) SetPrimaryTrackAlias(ctx context.Context, id int32, alias string)
 		IsPrimary: true,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("SetPrimaryTrackAlias: SetTrackAliasPrimaryStatus: %w", err)
 	}
 	err = qtx.SetTrackAliasPrimaryStatus(ctx, repository.SetTrackAliasPrimaryStatusParams{
 		TrackID:   id,
@@ -301,7 +302,61 @@ func (d *Psql) SetPrimaryTrackAlias(ctx context.Context, id int32, alias string)
 		IsPrimary: false,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("SetPrimaryTrackAlias: SetTrackAliasPrimaryStatus: %w", err)
+	}
+	return tx.Commit(ctx)
+}
+
+func (d *Psql) SetPrimaryTrackArtist(ctx context.Context, id int32, artistId int32, value bool) error {
+	l := logger.FromContext(ctx)
+	if id == 0 {
+		return errors.New("artist id not specified")
+	}
+	tx, err := d.conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		l.Err(err).Msg("Failed to begin transaction")
+		return fmt.Errorf("SetPrimaryTrackArtist: BeginTx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+	qtx := d.q.WithTx(tx)
+	// get all artists
+	artists, err := qtx.GetTrackArtists(ctx, id)
+	if err != nil {
+		return fmt.Errorf("SetPrimaryTrackArtist: GetTrackArtists: %w", err)
+	}
+	var primary int32
+	for _, v := range artists {
+		// i dont get it??? is_primary is not a nullable column??? why use pgtype.Bool???
+		// why not just use boolean??? is sqlc stupid??? am i stupid???????
+		if v.IsPrimary.Valid && v.IsPrimary.Bool {
+			primary = v.ID
+		}
+	}
+	if value && primary == artistId {
+		// no-op
+		return nil
+	}
+	l.Debug().Msgf("Marking artist with id %d as 'primary = %v' on track with id %d", artistId, value, id)
+	err = qtx.UpdateTrackPrimaryArtist(ctx, repository.UpdateTrackPrimaryArtistParams{
+		TrackID:   id,
+		ArtistID:  artistId,
+		IsPrimary: value,
+	})
+	if err != nil {
+		return fmt.Errorf("SetPrimaryTrackArtist: UpdateTrackPrimaryArtist: %w", err)
+	}
+	if value && primary != 0 {
+		l.Debug().Msgf("Unmarking artist with id %d as primary on track with id %d", primary, id)
+		// if we were marking a new one as primary and there was already one marked as primary,
+		// unmark that one as there can only be one
+		err = qtx.UpdateTrackPrimaryArtist(ctx, repository.UpdateTrackPrimaryArtistParams{
+			TrackID:   id,
+			ArtistID:  primary,
+			IsPrimary: false,
+		})
+		if err != nil {
+			return fmt.Errorf("SetPrimaryTrackArtist: UpdateTrackPrimaryArtist: %w", err)
+		}
 	}
 	return tx.Commit(ctx)
 }

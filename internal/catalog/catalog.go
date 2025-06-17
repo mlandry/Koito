@@ -6,6 +6,7 @@ package catalog
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -39,6 +40,9 @@ type SubmitListenOpts struct {
 	// artist, release, release group, and track in DB
 	SkipSaveListen bool
 
+	// When true, skips caching the images and only stores the image url in the db
+	SkipCacheImage bool
+
 	MbzCaller          mbz.MusicBrainzCaller
 	ArtistNames        []string
 	Artist             string
@@ -51,8 +55,9 @@ type SubmitListenOpts struct {
 	ReleaseMbzID       uuid.UUID
 	ReleaseGroupMbzID  uuid.UUID
 	Time               time.Time
-	UserID             int32
-	Client             string
+
+	UserID int32
+	Client string
 }
 
 const (
@@ -70,16 +75,17 @@ func SubmitListen(ctx context.Context, store db.DB, opts SubmitListenOpts) error
 		ctx,
 		store,
 		AssociateArtistsOpts{
-			ArtistMbzIDs:  opts.ArtistMbzIDs,
-			ArtistNames:   opts.ArtistNames,
-			ArtistName:    opts.Artist,
-			ArtistMbidMap: opts.ArtistMbidMappings,
-			Mbzc:          opts.MbzCaller,
-			TrackTitle:    opts.TrackTitle,
+			ArtistMbzIDs:   opts.ArtistMbzIDs,
+			ArtistNames:    opts.ArtistNames,
+			ArtistName:     opts.Artist,
+			ArtistMbidMap:  opts.ArtistMbidMappings,
+			Mbzc:           opts.MbzCaller,
+			TrackTitle:     opts.TrackTitle,
+			SkipCacheImage: opts.SkipCacheImage,
 		})
 	if err != nil {
-		l.Error().Err(err).Msg("Failed to associate artists to listen")
-		return err
+		l.Err(err).Msg("Failed to associate artists to listen")
+		return fmt.Errorf("SubmitListen: %w", err)
 	} else if len(artists) < 1 {
 		l.Debug().Msg("Failed to associate any artists to release")
 	}
@@ -97,10 +103,11 @@ func SubmitListen(ctx context.Context, store db.DB, opts SubmitListenOpts) error
 		TrackName:         opts.TrackTitle,
 		Mbzc:              opts.MbzCaller,
 		Artists:           artists,
+		SkipCacheImage:    opts.SkipCacheImage,
 	})
 	if err != nil {
 		l.Error().Err(err).Msg("Failed to associate release group to listen")
-		return err
+		return fmt.Errorf("SubmitListen: %w", err)
 	}
 	l.Debug().Any("album", rg).Msg("Matched listen to release")
 
@@ -120,7 +127,7 @@ func SubmitListen(ctx context.Context, store db.DB, opts SubmitListenOpts) error
 	})
 	if err != nil {
 		l.Error().Err(err).Msg("Failed to associate track to listen")
-		return err
+		return fmt.Errorf("SubmitListen: %w", err)
 	}
 	l.Debug().Any("track", track).Msg("Matched listen to track")
 

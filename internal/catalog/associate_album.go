@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 
 	"github.com/gabehf/koito/internal/cfg"
@@ -23,12 +24,13 @@ type AssociateAlbumOpts struct {
 	ReleaseName       string
 	TrackName         string // required
 	Mbzc              mbz.MusicBrainzCaller
+	SkipCacheImage    bool
 }
 
 func AssociateAlbum(ctx context.Context, d db.DB, opts AssociateAlbumOpts) (*models.Album, error) {
 	l := logger.FromContext(ctx)
 	if opts.TrackName == "" {
-		return nil, errors.New("required parameter TrackName missing")
+		return nil, errors.New("AssociateAlbum: required parameter TrackName missing")
 	}
 	releaseTitle := opts.ReleaseName
 	if releaseTitle == "" {
@@ -56,7 +58,7 @@ func matchAlbumByMbzReleaseID(ctx context.Context, d db.DB, opts AssociateAlbumO
 			Image:          a.Image,
 		}, nil
 	} else if !errors.Is(err, pgx.ErrNoRows) {
-		return nil, err
+		return nil, fmt.Errorf("matchAlbumByMbzReleaseID: %w", err)
 	} else {
 		l.Debug().Msgf("Album '%s' could not be found by MusicBrainz Release ID", opts.ReleaseName)
 		rg, err := createOrUpdateAlbumWithMbzReleaseID(ctx, d, opts)
@@ -69,14 +71,17 @@ func matchAlbumByMbzReleaseID(ctx context.Context, d db.DB, opts AssociateAlbumO
 
 func createOrUpdateAlbumWithMbzReleaseID(ctx context.Context, d db.DB, opts AssociateAlbumOpts) (*models.Album, error) {
 	l := logger.FromContext(ctx)
+
 	release, err := opts.Mbzc.GetRelease(ctx, opts.ReleaseMbzID)
 	if err != nil {
-		l.Warn().Msg("MusicBrainz unreachable, falling back to release title matching")
+		l.Warn().Msg("createOrUpdateAlbumWithMbzReleaseID: MusicBrainz unreachable, falling back to release title matching")
 		return matchAlbumByTitle(ctx, d, opts)
 	}
+
 	var album *models.Album
 	titles := []string{release.Title, opts.ReleaseName}
 	utils.Unique(&titles)
+
 	l.Debug().Msgf("Searching for albums '%v' from artist id %d in DB", titles, opts.Artists[0].ID)
 	album, err = d.GetAlbum(ctx, db.GetAlbumOpts{
 		ArtistID: opts.Artists[0].ID,
@@ -89,27 +94,29 @@ func createOrUpdateAlbumWithMbzReleaseID(ctx context.Context, d db.DB, opts Asso
 			MusicBrainzID: opts.ReleaseMbzID,
 		})
 		if err != nil {
-			l.Err(err).Msg("Failed to update album with MusicBrainz Release ID")
-			return nil, err
+			l.Err(err).Msg("createOrUpdateAlbumWithMbzReleaseID: failed to update album with MusicBrainz Release ID")
+			return nil, fmt.Errorf("createOrUpdateAlbumWithMbzReleaseID: %w", err)
 		}
 		l.Debug().Msgf("Updated album '%s' with MusicBrainz Release ID", album.Title)
+
 		if opts.ReleaseGroupMbzID != uuid.Nil {
 			aliases, err := opts.Mbzc.GetReleaseTitles(ctx, opts.ReleaseGroupMbzID)
 			if err == nil {
 				l.Debug().Msgf("Associating aliases '%s' with Release '%s'", aliases, album.Title)
 				err = d.SaveAlbumAliases(ctx, album.ID, aliases, "MusicBrainz")
 				if err != nil {
-					l.Err(err).Msg("Failed to save aliases")
+					l.Err(err).Msg("createOrUpdateAlbumWithMbzReleaseID: failed to save aliases")
 				}
 			} else {
-				l.Info().AnErr("err", err).Msg("Failed to get release group from MusicBrainz")
+				l.Info().AnErr("err", err).Msg("createOrUpdateAlbumWithMbzReleaseID: failed to get release group from MusicBrainz")
 			}
 		}
 	} else if !errors.Is(err, pgx.ErrNoRows) {
-		l.Err(err).Msg("Error while searching for album by MusicBrainz Release ID")
-		return nil, err
+		l.Err(err).Msg("createOrUpdateAlbumWithMbzReleaseID: error while searching for album by MusicBrainz Release ID")
+		return nil, fmt.Errorf("createOrUpdateAlbumWithMbzReleaseID: %w", err)
 	} else {
 		l.Debug().Msgf("Album %s could not be found. Creating...", release.Title)
+
 		var variousArtists bool
 		for _, artistCredit := range release.ArtistCredit {
 			if artistCredit.Name == "Various Artists" {
@@ -117,6 +124,7 @@ func createOrUpdateAlbumWithMbzReleaseID(ctx context.Context, d db.DB, opts Asso
 				variousArtists = true
 			}
 		}
+
 		l.Debug().Msg("Searching for album images...")
 		var imgid uuid.UUID
 		imgUrl, err := images.GetAlbumImage(ctx, images.AlbumImageOpts{
@@ -124,23 +132,28 @@ func createOrUpdateAlbumWithMbzReleaseID(ctx context.Context, d db.DB, opts Asso
 			Album:        release.Title,
 			ReleaseMbzID: &opts.ReleaseMbzID,
 		})
+
 		if err == nil && imgUrl != "" {
-			var size ImageSize
-			if cfg.FullImageCacheEnabled() {
-				size = ImageSizeFull
-			} else {
-				size = ImageSizeLarge
-			}
 			imgid = uuid.New()
-			l.Debug().Msg("Downloading album image from source...")
-			err = DownloadAndCacheImage(ctx, imgid, imgUrl, size)
-			if err != nil {
-				l.Err(err).Msg("Failed to cache image")
+			if !opts.SkipCacheImage {
+				var size ImageSize
+				if cfg.FullImageCacheEnabled() {
+					size = ImageSizeFull
+				} else {
+					size = ImageSizeLarge
+				}
+				l.Debug().Msg("Downloading album image from source...")
+				err = DownloadAndCacheImage(ctx, imgid, imgUrl, size)
+				if err != nil {
+					l.Err(err).Msg("createOrUpdateAlbumWithMbzReleaseID: failed to cache image")
+				}
 			}
 		}
+
 		if err != nil {
-			l.Debug().Msgf("Failed to get album images for %s: %s", release.Title, err.Error())
+			l.Debug().Msgf("createOrUpdateAlbumWithMbzReleaseID: failed to get album images for %s: %s", release.Title, err.Error())
 		}
+
 		album, err = d.SaveAlbum(ctx, db.SaveAlbumOpts{
 			Title:          release.Title,
 			MusicBrainzID:  opts.ReleaseMbzID,
@@ -150,22 +163,25 @@ func createOrUpdateAlbumWithMbzReleaseID(ctx context.Context, d db.DB, opts Asso
 			ImageSrc:       imgUrl,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("createOrUpdateAlbumWithMbzReleaseID: %w", err)
 		}
+
 		if opts.ReleaseGroupMbzID != uuid.Nil {
 			aliases, err := opts.Mbzc.GetReleaseTitles(ctx, opts.ReleaseGroupMbzID)
 			if err == nil {
 				l.Debug().Msgf("Associating aliases '%s' with Release '%s'", aliases, album.Title)
 				err = d.SaveAlbumAliases(ctx, album.ID, aliases, "MusicBrainz")
 				if err != nil {
-					l.Err(err).Msg("Failed to save aliases")
+					l.Err(err).Msg("createOrUpdateAlbumWithMbzReleaseID: failed to save aliases")
 				}
 			} else {
-				l.Info().AnErr("err", err).Msg("Failed to get release group from MusicBrainz")
+				l.Info().AnErr("err", err).Msg("createOrUpdateAlbumWithMbzReleaseID: failed to get release group from MusicBrainz")
 			}
 		}
+
 		l.Info().Msgf("Created album '%s' with MusicBrainz Release ID", album.Title)
 	}
+
 	return &models.Album{
 		ID:             album.ID,
 		MbzID:          &opts.ReleaseMbzID,
@@ -176,12 +192,14 @@ func createOrUpdateAlbumWithMbzReleaseID(ctx context.Context, d db.DB, opts Asso
 
 func matchAlbumByTitle(ctx context.Context, d db.DB, opts AssociateAlbumOpts) (*models.Album, error) {
 	l := logger.FromContext(ctx)
+
 	var releaseName string
 	if opts.ReleaseName != "" {
 		releaseName = opts.ReleaseName
 	} else {
 		releaseName = opts.TrackName
 	}
+
 	a, err := d.GetAlbum(ctx, db.GetAlbumOpts{
 		Title:    releaseName,
 		ArtistID: opts.Artists[0].ID,
@@ -195,11 +213,11 @@ func matchAlbumByTitle(ctx context.Context, d db.DB, opts AssociateAlbumOpts) (*
 				MusicBrainzID: opts.ReleaseMbzID,
 			})
 			if err != nil {
-				l.Err(err).Msg("Failed to associate existing release with MusicBrainz ID")
+				l.Err(err).Msg("matchAlbumByTitle: failed to associate existing release with MusicBrainz ID")
 			}
 		}
 	} else if !errors.Is(err, pgx.ErrNoRows) {
-		return nil, err
+		return nil, fmt.Errorf("matchAlbumByTitle: %w", err)
 	} else {
 		var imgid uuid.UUID
 		imgUrl, err := images.GetAlbumImage(ctx, images.AlbumImageOpts{
@@ -208,22 +226,25 @@ func matchAlbumByTitle(ctx context.Context, d db.DB, opts AssociateAlbumOpts) (*
 			ReleaseMbzID: &opts.ReleaseMbzID,
 		})
 		if err == nil && imgUrl != "" {
-			var size ImageSize
-			if cfg.FullImageCacheEnabled() {
-				size = ImageSizeFull
-			} else {
-				size = ImageSizeLarge
-			}
 			imgid = uuid.New()
-			l.Debug().Msg("Downloading album image from source...")
-			err = DownloadAndCacheImage(ctx, imgid, imgUrl, size)
-			if err != nil {
-				l.Err(err).Msg("Failed to cache image")
+			if !opts.SkipCacheImage {
+				var size ImageSize
+				if cfg.FullImageCacheEnabled() {
+					size = ImageSizeFull
+				} else {
+					size = ImageSizeLarge
+				}
+				l.Debug().Msg("Downloading album image from source...")
+				err = DownloadAndCacheImage(ctx, imgid, imgUrl, size)
+				if err != nil {
+					l.Err(err).Msg("createOrUpdateAlbumWithMbzReleaseID: failed to cache image")
+				}
 			}
 		}
 		if err != nil {
-			l.Debug().Msgf("Failed to get album images for %s: %s", opts.ReleaseName, err.Error())
+			l.Debug().AnErr("error", err).Msgf("matchAlbumByTitle: failed to get album images for %s", opts.ReleaseName)
 		}
+
 		a, err = d.SaveAlbum(ctx, db.SaveAlbumOpts{
 			Title:         releaseName,
 			ArtistIDs:     utils.FlattenArtistIDs(opts.Artists),
@@ -232,10 +253,11 @@ func matchAlbumByTitle(ctx context.Context, d db.DB, opts AssociateAlbumOpts) (*
 			ImageSrc:      imgUrl,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("matchAlbumByTitle: %w", err)
 		}
 		l.Info().Msgf("Created album '%s' with artist and title", a.Title)
 	}
+
 	return &models.Album{
 		ID:    a.ID,
 		Title: a.Title,

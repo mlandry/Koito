@@ -3,6 +3,7 @@ package mbz
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 
 	"github.com/gabehf/koito/internal/logger"
@@ -28,7 +29,7 @@ func (c *MusicBrainzClient) getArtist(ctx context.Context, id uuid.UUID) (*Music
 	mbzArtist := new(MusicBrainzArtist)
 	err := c.getEntity(ctx, artistAliasFmtStr, id, mbzArtist)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getArtist: %w", err)
 	}
 	return mbzArtist, nil
 }
@@ -38,10 +39,10 @@ func (c *MusicBrainzClient) GetArtistPrimaryAliases(ctx context.Context, id uuid
 	l := logger.FromContext(ctx)
 	artist, err := c.getArtist(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetArtistPrimaryAliases: %w", err)
 	}
 	if artist == nil {
-		return nil, errors.New("artist could not be found by musicbrainz")
+		return nil, errors.New("GetArtistPrimaryAliases: artist could not be found by musicbrainz")
 	}
 	used := make(map[string]bool)
 	ret := make([]string, 1)

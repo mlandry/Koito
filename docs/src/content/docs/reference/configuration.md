@@ -70,6 +70,9 @@ Koito is configured using **environment variables**. This is the full list of co
 - Description: A unix timestamp. If an imported listen has a timestamp after this, it will be discarded.
 ##### KOITO_IMPORT_AFTER_UNIX
 - Description: A unix timestamp. If an imported listen has a timestamp before this, it will be discarded.
+##### KOITO_FETCH_IMAGES_DURING_IMPORT
+- Default: `false`
+- Description: When true, images will be downloaded and cached during imports.
 ##### KOITO_CORS_ALLOWED_ORIGINS
 - Default: No CORS policy
 - Description: A comma separated list of origins to allow CORS requests from. The special value `*` allows CORS requests from all origins.

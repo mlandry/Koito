@@ -80,11 +80,13 @@ type ArtistAlias struct {
 type ArtistRelease struct {
 	ArtistID  int32
 	ReleaseID int32
+	IsPrimary bool
 }
 
 type ArtistTrack struct {
-	ArtistID int32
-	TrackID  int32
+	ArtistID  int32
+	TrackID   int32
+	IsPrimary bool
 }
 
 type ArtistsWithName struct {

@@ -3,6 +3,7 @@ package importer
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path"
 	"time"
@@ -29,7 +30,7 @@ func ImportSpotifyFile(ctx context.Context, store db.DB, filename string) error 
 	file, err := os.Open(path.Join(cfg.ConfigDir(), "import", filename))
 	if err != nil {
 		l.Err(err).Msgf("Failed to read import file: %s", filename)
-		return err
+		return fmt.Errorf("ImportSpotifyFile: %w", err)
 	}
 	defer file.Close()
 	var throttleFunc = func() {}
@@ -41,7 +42,7 @@ func ImportSpotifyFile(ctx context.Context, store db.DB, filename string) error 
 	export := make([]SpotifyExportItem, 0)
 	err = json.NewDecoder(file).Decode(&export)
 	if err != nil {
-		return err
+		return fmt.Errorf("ImportSpotifyFile: %w", err)
 	}
 
 	for _, item := range export {
@@ -58,19 +59,20 @@ func ImportSpotifyFile(ctx context.Context, store db.DB, filename string) error 
 			continue
 		}
 		opts := catalog.SubmitListenOpts{
-			MbzCaller:    &mbz.MusicBrainzClient{},
-			Artist:       item.ArtistName,
-			TrackTitle:   item.TrackName,
-			ReleaseTitle: item.AlbumName,
-			Duration:     dur / 1000,
-			Time:         item.Timestamp,
-			Client:       "spotify",
-			UserID:       1,
+			MbzCaller:      &mbz.MusicBrainzClient{},
+			Artist:         item.ArtistName,
+			TrackTitle:     item.TrackName,
+			ReleaseTitle:   item.AlbumName,
+			Duration:       dur / 1000,
+			Time:           item.Timestamp,
+			Client:         "spotify",
+			UserID:         1,
+			SkipCacheImage: !cfg.FetchImagesDuringImport(),
 		}
 		err = catalog.SubmitListen(ctx, store, opts)
 		if err != nil {
 			l.Err(err).Msg("Failed to import spotify playback item")
-			return err
+			return fmt.Errorf("ImportSpotifyFile: %w", err)
 		}
 		throttleFunc()
 	}

@@ -3,6 +3,7 @@ package importer
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path"
 	"strconv"
@@ -46,7 +47,7 @@ func ImportLastFMFile(ctx context.Context, store db.DB, mbzc mbz.MusicBrainzCall
 	file, err := os.Open(path.Join(cfg.ConfigDir(), "import", filename))
 	if err != nil {
 		l.Err(err).Msgf("Failed to read import file: %s", filename)
-		return err
+		return fmt.Errorf("ImportLastFMFile: %w", err)
 	}
 	defer file.Close()
 	var throttleFunc = func() {}
@@ -58,7 +59,7 @@ func ImportLastFMFile(ctx context.Context, store db.DB, mbzc mbz.MusicBrainzCall
 	export := make([]LastFMExportPage, 0)
 	err = json.NewDecoder(file).Decode(&export)
 	if err != nil {
-		return err
+		return fmt.Errorf("ImportLastFMFile: %w", err)
 	}
 	count := 0
 	for _, item := range export {
@@ -88,7 +89,8 @@ func ImportLastFMFile(ctx context.Context, store db.DB, mbzc mbz.MusicBrainzCall
 			if err != nil {
 				ts, err = time.Parse("02 Jan 2006, 15:04", track.Date.Text)
 				if err != nil {
-					ts = time.Now().UTC()
+					l.Err(err).Msg("Could not parse time from listen activity, skipping...")
+					continue
 				}
 			} else {
 				ts = time.Unix(unix, 0).UTC()
@@ -116,11 +118,12 @@ func ImportLastFMFile(ctx context.Context, store db.DB, mbzc mbz.MusicBrainzCall
 				Client:             "lastfm",
 				Time:               ts,
 				UserID:             1,
+				SkipCacheImage:     !cfg.FetchImagesDuringImport(),
 			}
 			err = catalog.SubmitListen(ctx, store, opts)
 			if err != nil {
 				l.Err(err).Msg("Failed to import LastFM playback item")
-				return err
+				return fmt.Errorf("ImportLastFMFile: %w", err)
 			}
 			count++
 			throttleFunc()

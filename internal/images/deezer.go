@@ -53,7 +53,7 @@ func NewDeezerClient() *DeezerClient {
 	ret := new(DeezerClient)
 	ret.url = deezerBaseUrl
 	ret.userAgent = cfg.UserAgent()
-	ret.requestQueue = queue.NewRequestQueue(1, 1)
+	ret.requestQueue = queue.NewRequestQueue(5, 5)
 	return ret
 }
 
@@ -92,19 +92,19 @@ func (c *DeezerClient) getEntity(ctx context.Context, endpoint string, result an
 	l.Debug().Msgf("Sending request to ImageSrc: GET %s", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("getEntity: %w", err)
 	}
 	l.Debug().Msg("Adding ImageSrc request to queue")
 	body, err := c.queue(ctx, req)
 	if err != nil {
 		l.Err(err).Msg("Deezer request failed")
-		return err
+		return fmt.Errorf("getEntity: %w", err)
 	}
 
 	err = json.Unmarshal(body, result)
 	if err != nil {
 		l.Err(err).Msg("Failed to unmarshal Deezer response")
-		return err
+		return fmt.Errorf("getEntity: %w", err)
 	}
 
 	return nil
@@ -121,10 +121,10 @@ func (c *DeezerClient) GetArtistImages(ctx context.Context, aliases []string) (s
 	for _, a := range aliasesAscii {
 		err := c.getEntity(ctx, fmt.Sprintf(artistImageEndpoint, url.QueryEscape(fmt.Sprintf("artist:\"%s\"", a))), resp)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("GetArtistImages: %w", err)
 		}
 		if len(resp.Data) < 1 {
-			return "", errors.New("artist image not found")
+			return "", errors.New("GetArtistImages: artist image not found")
 		}
 		for _, v := range resp.Data {
 			if strings.EqualFold(v.Name, a) {
@@ -139,10 +139,10 @@ func (c *DeezerClient) GetArtistImages(ctx context.Context, aliases []string) (s
 	for _, a := range utils.RemoveInBoth(aliasesUniq, aliasesAscii) {
 		err := c.getEntity(ctx, fmt.Sprintf(artistImageEndpoint, url.QueryEscape(fmt.Sprintf("artist:\"%s\"", a))), resp)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("GetArtistImages: %w", err)
 		}
 		if len(resp.Data) < 1 {
-			return "", errors.New("artist image not found")
+			return "", errors.New("GetArtistImages: artist image not found")
 		}
 		for _, v := range resp.Data {
 			if strings.EqualFold(v.Name, a) {
@@ -152,7 +152,7 @@ func (c *DeezerClient) GetArtistImages(ctx context.Context, aliases []string) (s
 			}
 		}
 	}
-	return "", errors.New("artist image not found")
+	return "", errors.New("GetArtistImages: artist image not found")
 }
 
 func (c *DeezerClient) GetAlbumImages(ctx context.Context, artists []string, album string) (string, error) {
@@ -163,7 +163,7 @@ func (c *DeezerClient) GetAlbumImages(ctx context.Context, artists []string, alb
 	for _, alias := range artists {
 		err := c.getEntity(ctx, fmt.Sprintf(albumImageEndpoint, url.QueryEscape(fmt.Sprintf("artist:\"%s\"album:\"%s\"", alias, album))), resp)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("GetAlbumImages: %w", err)
 		}
 		if len(resp.Data) > 0 {
 			for _, v := range resp.Data {
@@ -179,7 +179,7 @@ func (c *DeezerClient) GetAlbumImages(ctx context.Context, artists []string, alb
 	// if none are found, try to find an album just by album title
 	err := c.getEntity(ctx, fmt.Sprintf(albumImageEndpoint, url.QueryEscape(fmt.Sprintf("album:\"%s\"", album))), resp)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("GetAlbumImages: %w", err)
 	}
 	for _, v := range resp.Data {
 		if strings.EqualFold(v.Title, album) {
@@ -189,5 +189,5 @@ func (c *DeezerClient) GetAlbumImages(ctx context.Context, artists []string, alb
 		}
 	}
 
-	return "", errors.New("album image not found")
+	return "", errors.New("GetAlbumImages: album image not found")
 }

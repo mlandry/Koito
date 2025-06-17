@@ -36,6 +36,7 @@ func bindRoutes(
 
 	r.Route("/apis/web/v1", func(r chi.Router) {
 		r.Get("/artist", handlers.GetArtistHandler(db))
+		r.Get("/artists", handlers.GetArtistsForItemHandler(db))
 		r.Get("/album", handlers.GetAlbumHandler(db))
 		r.Get("/track", handlers.GetTrackHandler(db))
 		r.Get("/top-tracks", handlers.GetTopTracksHandler(db))
@@ -75,6 +76,7 @@ func bindRoutes(
 			r.Post("/merge/albums", handlers.MergeReleaseGroupsHandler(db))
 			r.Post("/merge/artists", handlers.MergeArtistsHandler(db))
 			r.Delete("/artist", handlers.DeleteArtistHandler(db))
+			r.Post("/artists/primary", handlers.SetPrimaryArtistHandler(db))
 			r.Delete("/album", handlers.DeleteAlbumHandler(db))
 			r.Delete("/track", handlers.DeleteTrackHandler(db))
 			r.Delete("/listen", handlers.DeleteListenHandler(db))

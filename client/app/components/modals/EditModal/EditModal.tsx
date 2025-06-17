@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { createAlias, deleteAlias, getAliases, getAlbum, setPrimaryAlias, type Album, type Alias } from "api/api";
-import { Modal } from "./Modal";
-import { AsyncButton } from "../AsyncButton";
+import { createAlias, deleteAlias, getAliases, setPrimaryAlias, type Alias } from "api/api";
+import { Modal } from "../Modal";
+import { AsyncButton } from "../../AsyncButton";
 import { useEffect, useState } from "react";
 import { Trash } from "lucide-react";
 import SetVariousArtists from "./SetVariousArtist";
+import SetPrimaryArtist from "./SetPrimaryArtist";
 
 interface Props {
     type: string 
@@ -18,7 +19,6 @@ export default function EditModal({ open, setOpen, type, id }: Props) {
     const [loading, setLoading ] = useState(false)
     const [err, setError ] = useState<string>()
     const [displayData, setDisplayData] = useState<Alias[]>([])
-    const [variousArtists, setVariousArtists] = useState(false)
         
     const { isPending, isError, data, error } = useQuery({ 
         queryKey: [
@@ -125,7 +125,10 @@ export default function EditModal({ open, setOpen, type, id }: Props) {
                     </div>
                 </div>
                 { type.toLowerCase() === "album" &&
+                    <>
                     <SetVariousArtists id={id} />
+                    <SetPrimaryArtist id={id} type="album" />
+                    </>
                 }
             </div>
         </Modal>

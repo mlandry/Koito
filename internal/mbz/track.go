@@ -2,6 +2,7 @@ package mbz
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 )
@@ -17,7 +18,7 @@ func (c *MusicBrainzClient) GetTrack(ctx context.Context, id uuid.UUID) (*MusicB
 	track := new(MusicBrainzTrack)
 	err := c.getEntity(ctx, recordingFmtStr, id, track)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetTrack: %w", err)
 	}
 	return track, nil
 }

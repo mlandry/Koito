@@ -3,6 +3,7 @@ package psql
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/gabehf/koito/internal/db"
@@ -17,10 +18,11 @@ func (p *Psql) CountListens(ctx context.Context, period db.Period) (int64, error
 		ListenedAt_2: t2,
 	})
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("CountListens: %w", err)
 	}
 	return count, nil
 }
+
 func (p *Psql) CountTracks(ctx context.Context, period db.Period) (int64, error) {
 	t2 := time.Now()
 	t1 := db.StartTimeFromPeriod(period)
@@ -29,10 +31,11 @@ func (p *Psql) CountTracks(ctx context.Context, period db.Period) (int64, error)
 		ListenedAt_2: t2,
 	})
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("CountTracks: %w", err)
 	}
 	return count, nil
 }
+
 func (p *Psql) CountAlbums(ctx context.Context, period db.Period) (int64, error) {
 	t2 := time.Now()
 	t1 := db.StartTimeFromPeriod(period)
@@ -41,10 +44,11 @@ func (p *Psql) CountAlbums(ctx context.Context, period db.Period) (int64, error)
 		ListenedAt_2: t2,
 	})
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("CountAlbums: %w", err)
 	}
 	return count, nil
 }
+
 func (p *Psql) CountArtists(ctx context.Context, period db.Period) (int64, error) {
 	t2 := time.Now()
 	t1 := db.StartTimeFromPeriod(period)
@@ -53,10 +57,11 @@ func (p *Psql) CountArtists(ctx context.Context, period db.Period) (int64, error
 		ListenedAt_2: t2,
 	})
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("CountArtists: %w", err)
 	}
 	return count, nil
 }
+
 func (p *Psql) CountTimeListened(ctx context.Context, period db.Period) (int64, error) {
 	t2 := time.Now()
 	t1 := db.StartTimeFromPeriod(period)
@@ -65,10 +70,11 @@ func (p *Psql) CountTimeListened(ctx context.Context, period db.Period) (int64, 
 		ListenedAt_2: t2,
 	})
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("CountTimeListened: %w", err)
 	}
 	return count, nil
 }
+
 func (p *Psql) CountTimeListenedToItem(ctx context.Context, opts db.TimeListenedOpts) (int64, error) {
 	t2 := time.Now()
 	t1 := db.StartTimeFromPeriod(opts.Period)
@@ -80,7 +86,7 @@ func (p *Psql) CountTimeListenedToItem(ctx context.Context, opts db.TimeListened
 			ArtistID:     opts.ArtistID,
 		})
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("CountTimeListenedToItem (Artist): %w", err)
 		}
 		return count, nil
 	} else if opts.AlbumID > 0 {
@@ -90,10 +96,9 @@ func (p *Psql) CountTimeListenedToItem(ctx context.Context, opts db.TimeListened
 			ReleaseID:    opts.AlbumID,
 		})
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("CountTimeListenedToItem (Album): %w", err)
 		}
 		return count, nil
-
 	} else if opts.TrackID > 0 {
 		count, err := p.q.CountTimeListenedToTrack(ctx, repository.CountTimeListenedToTrackParams{
 			ListenedAt:   t1,
@@ -101,9 +106,9 @@ func (p *Psql) CountTimeListenedToItem(ctx context.Context, opts db.TimeListened
 			ID:           opts.TrackID,
 		})
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("CountTimeListenedToItem (Track): %w", err)
 		}
 		return count, nil
 	}
-	return 0, errors.New("an id must be provided")
+	return 0, errors.New("CountTimeListenedToItem: an id must be provided")
 }

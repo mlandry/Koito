@@ -2,6 +2,7 @@ package mbz
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/google/uuid"
@@ -36,7 +37,7 @@ func (c *MusicBrainzClient) GetReleaseGroup(ctx context.Context, id uuid.UUID) (
 	mbzRG := new(MusicBrainzReleaseGroup)
 	err := c.getEntity(ctx, releaseGroupFmtStr, id, mbzRG)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetReleaseGroup: %w", err)
 	}
 	return mbzRG, nil
 }
@@ -45,7 +46,7 @@ func (c *MusicBrainzClient) GetRelease(ctx context.Context, id uuid.UUID) (*Musi
 	mbzRelease := new(MusicBrainzRelease)
 	err := c.getEntity(ctx, releaseFmtStr, id, mbzRelease)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetRelease: %w", err)
 	}
 	return mbzRelease, nil
 }
@@ -53,7 +54,7 @@ func (c *MusicBrainzClient) GetRelease(ctx context.Context, id uuid.UUID) (*Musi
 func (c *MusicBrainzClient) GetReleaseTitles(ctx context.Context, RGID uuid.UUID) ([]string, error) {
 	releaseGroup, err := c.GetReleaseGroup(ctx, RGID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetReleaseTitles: %w", err)
 	}
 
 	var titles []string
@@ -80,7 +81,7 @@ func ReleaseGroupToTitles(rg *MusicBrainzReleaseGroup) []string {
 func (c *MusicBrainzClient) GetLatinTitles(ctx context.Context, id uuid.UUID) ([]string, error) {
 	rg, err := c.GetReleaseGroup(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetLatinTitles: %w", err)
 	}
 	titles := make([]string, 0)
 	for _, r := range rg.Releases {

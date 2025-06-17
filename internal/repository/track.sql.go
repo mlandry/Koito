@@ -138,12 +138,7 @@ SELECT
     t.release_id,
     r.image,
     COUNT(*) AS listen_count,
-    (
-        SELECT json_agg(json_build_object('id', a.id, 'name', a.name))
-        FROM artist_tracks at2
-        JOIN artists_with_name a ON a.id = at2.artist_id
-        WHERE at2.track_id = t.id
-    ) AS artists
+    get_artists_for_track(t.id) AS artists
 FROM listens l
 JOIN tracks_with_title t ON l.track_id = t.id
 JOIN releases r ON t.release_id = r.id
@@ -215,12 +210,7 @@ SELECT
     t.release_id,
     r.image,
     COUNT(*) AS listen_count,
-    (
-        SELECT json_agg(json_build_object('id', a.id, 'name', a.name))
-        FROM artist_tracks at2
-        JOIN artists_with_name a ON a.id = at2.artist_id
-        WHERE at2.track_id = t.id
-    ) AS artists
+    get_artists_for_track(t.id) AS artists
 FROM listens l
 JOIN tracks_with_title t ON l.track_id = t.id
 JOIN releases r ON t.release_id = r.id
@@ -291,12 +281,7 @@ SELECT
     t.release_id,
     r.image,
     COUNT(*) AS listen_count,
-    (
-        SELECT json_agg(json_build_object('id', a.id, 'name', a.name))
-        FROM artist_tracks at
-        JOIN artists_with_name a ON a.id = at.artist_id
-        WHERE at.track_id = t.id
-    ) AS artists
+    get_artists_for_track(t.id) AS artists
 FROM listens l
 JOIN tracks_with_title t ON l.track_id = t.id
 JOIN releases r ON t.release_id = r.id
@@ -500,5 +485,21 @@ type UpdateTrackMbzIDParams struct {
 
 func (q *Queries) UpdateTrackMbzID(ctx context.Context, arg UpdateTrackMbzIDParams) error {
 	_, err := q.db.Exec(ctx, updateTrackMbzID, arg.ID, arg.MusicBrainzID)
+	return err
+}
+
+const updateTrackPrimaryArtist = `-- name: UpdateTrackPrimaryArtist :exec
+UPDATE artist_tracks SET is_primary = $3
+WHERE artist_id = $1 AND track_id = $2
+`
+
+type UpdateTrackPrimaryArtistParams struct {
+	ArtistID  int32
+	TrackID   int32
+	IsPrimary bool
+}
+
+func (q *Queries) UpdateTrackPrimaryArtist(ctx context.Context, arg UpdateTrackPrimaryArtistParams) error {
+	_, err := q.db.Exec(ctx, updateTrackPrimaryArtist, arg.ArtistID, arg.TrackID, arg.IsPrimary)
 	return err
 }

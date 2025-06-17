@@ -53,6 +53,7 @@ func makeAuthRequest(t *testing.T, session, method, endpoint string, body io.Rea
 		Name:  "koito_session",
 		Value: session,
 	})
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	t.Logf("Making request to %s with session: %s", endpoint, session)
 	return http.DefaultClient.Do(req)
 }
@@ -512,7 +513,7 @@ func TestAuth(t *testing.T) {
 	encoded = formdata.Encode()
 	resp, err = http.DefaultClient.Post(host()+"/apis/web/v1/login", "application/x-www-form-urlencoded", strings.NewReader(encoded))
 	require.NoError(t, err)
-	require.Equal(t, 400, resp.StatusCode)
+	require.Equal(t, 401, resp.StatusCode)
 
 	// reset update so other tests dont fail
 	req, err = http.NewRequest("PATCH", host()+fmt.Sprintf("/apis/web/v1/user?username=%s&password=%s", cfg.DefaultUsername(), cfg.DefaultPassword()), nil)
@@ -731,4 +732,161 @@ func TestAlbumReplaceImage(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, a.Image)
 	assert.Equal(t, newid, *a.Image)
+}
+
+func TestSetPrimaryArtist(t *testing.T) {
+
+	t.Run("Submit Listens", doSubmitListens)
+
+	ctx := context.Background()
+
+	// set and unset track primary artist
+
+	formdata := url.Values{}
+	formdata.Set("artist_id", "1")
+	formdata.Set("track_id", "1")
+	formdata.Set("is_primary", "false")
+	body := formdata.Encode()
+	resp, err := makeAuthRequest(t, session, "POST", "/apis/web/v1/artists/primary", strings.NewReader(body))
+	require.NoError(t, err)
+	require.Equal(t, 204, resp.StatusCode)
+
+	exists, err := store.RowExists(ctx, `
+    SELECT EXISTS (
+      SELECT 1 FROM artist_tracks
+      WHERE track_id = $1 AND artist_id = $2 AND is_primary = $3
+    )`, 1, 1, false)
+	require.NoError(t, err)
+	assert.True(t, exists, "expected artist is_primary to be false")
+
+	formdata = url.Values{}
+	formdata.Set("artist_id", "1")
+	formdata.Set("track_id", "1")
+	formdata.Set("is_primary", "true")
+	body = formdata.Encode()
+	resp, err = makeAuthRequest(t, session, "POST", "/apis/web/v1/artists/primary", strings.NewReader(body))
+	require.NoError(t, err)
+	require.Equal(t, 204, resp.StatusCode)
+
+	exists, err = store.RowExists(ctx, `
+    SELECT EXISTS (
+      SELECT 1 FROM artist_tracks
+      WHERE track_id = $1 AND artist_id = $2 AND is_primary = $3
+    )`, 1, 1, true)
+	require.NoError(t, err)
+	assert.True(t, exists, "expected artist is_primary to be true")
+
+	// set and unset album primary artist
+
+	formdata = url.Values{}
+	formdata.Set("artist_id", "1")
+	formdata.Set("album_id", "1")
+	formdata.Set("is_primary", "false")
+	body = formdata.Encode()
+	resp, err = makeAuthRequest(t, session, "POST", "/apis/web/v1/artists/primary", strings.NewReader(body))
+	require.NoError(t, err)
+	require.Equal(t, 204, resp.StatusCode)
+
+	exists, err = store.RowExists(ctx, `
+    SELECT EXISTS (
+      SELECT 1 FROM artist_releases
+      WHERE release_id = $1 AND artist_id = $2 AND is_primary = $3
+    )`, 1, 1, false)
+	require.NoError(t, err)
+	assert.True(t, exists, "expected artist is_primary to be false")
+
+	formdata = url.Values{}
+	formdata.Set("artist_id", "1")
+	formdata.Set("album_id", "1")
+	formdata.Set("is_primary", "true")
+	body = formdata.Encode()
+	resp, err = makeAuthRequest(t, session, "POST", "/apis/web/v1/artists/primary", strings.NewReader(body))
+	require.NoError(t, err)
+	require.Equal(t, 204, resp.StatusCode)
+
+	exists, err = store.RowExists(ctx, `
+    SELECT EXISTS (
+      SELECT 1 FROM artist_releases
+      WHERE release_id = $1 AND artist_id = $2 AND is_primary = $3
+    )`, 1, 1, true)
+	require.NoError(t, err)
+	assert.True(t, exists, "expected artist is_primary to be true")
+
+	// create a new track with multiple artists to make sure only one is primary at a time
+
+	listenBody := `{
+		"listen_type": "single",
+		"payload": [
+			{
+				"listened_at": 1749475719,
+				"track_metadata": {
+					"additional_info": {
+						"artist_names": [
+							"Rat Tally",
+							"Madeline Kenney"
+						],
+						"duration_ms": 197270,
+						"submission_client": "navidrome",
+						"submission_client_version": "0.56.1 (fa2cf362)"
+					},
+					"artist_name": "Rat Tally feat. Madeline Kenney",
+					"release_name": "In My Car",
+					"track_name": "In My Car"
+				}
+			}
+		]
+	}`
+
+	req, err := http.NewRequest("POST", host()+"/apis/listenbrainz/1/submit-listens", strings.NewReader(listenBody))
+	require.NoError(t, err)
+	req.Header.Add("Authorization", fmt.Sprintf("Token %s", apikey))
+	req.Header.Add("Content-Type", "application/json")
+	resp, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	respBytes, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Equal(t, `{"status": "ok"}`, string(respBytes))
+
+	// set both artists as primary
+
+	formdata = url.Values{}
+	formdata.Set("artist_id", "4")
+	formdata.Set("album_id", "4")
+	formdata.Set("is_primary", "true")
+	body = formdata.Encode()
+	resp, err = makeAuthRequest(t, session, "POST", "/apis/web/v1/artists/primary", strings.NewReader(body))
+	require.NoError(t, err)
+	require.Equal(t, 204, resp.StatusCode)
+	formdata = url.Values{}
+	formdata.Set("artist_id", "5")
+	formdata.Set("album_id", "4")
+	formdata.Set("is_primary", "true")
+	body = formdata.Encode()
+	resp, err = makeAuthRequest(t, session, "POST", "/apis/web/v1/artists/primary", strings.NewReader(body))
+	require.NoError(t, err)
+	require.Equal(t, 204, resp.StatusCode)
+
+	formdata = url.Values{}
+	formdata.Set("artist_id", "4")
+	formdata.Set("track_id", "4")
+	formdata.Set("is_primary", "true")
+	body = formdata.Encode()
+	resp, err = makeAuthRequest(t, session, "POST", "/apis/web/v1/artists/primary", strings.NewReader(body))
+	require.NoError(t, err)
+	require.Equal(t, 204, resp.StatusCode)
+	formdata = url.Values{}
+	formdata.Set("artist_id", "5")
+	formdata.Set("track_id", "4")
+	formdata.Set("is_primary", "true")
+	body = formdata.Encode()
+	resp, err = makeAuthRequest(t, session, "POST", "/apis/web/v1/artists/primary", strings.NewReader(body))
+	require.NoError(t, err)
+	require.Equal(t, 204, resp.StatusCode)
+
+	count, err := store.Count(ctx, `SELECT COUNT(*) FROM artist_releases WHERE release_id = $1 AND is_primary = $2`, 4, true)
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, count, "expected only one primary artist for release")
+	count, err = store.Count(ctx, `SELECT COUNT(*) FROM artist_tracks WHERE track_id = $1 AND is_primary = $2`, 4, true)
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, count, "expected only one primary artist for track")
 }

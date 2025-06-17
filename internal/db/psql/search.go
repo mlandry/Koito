@@ -3,6 +3,7 @@ package psql
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/gabehf/koito/internal/models"
 	"github.com/gabehf/koito/internal/repository"
@@ -19,7 +20,7 @@ func (d *Psql) SearchArtists(ctx context.Context, q string) ([]*models.Artist, e
 			Limit:   searchItemLimit,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("SearchArtist: SearchArtistsBySubstring: %w", err)
 		}
 		ret := make([]*models.Artist, len(rows))
 		for i, row := range rows {
@@ -37,7 +38,7 @@ func (d *Psql) SearchArtists(ctx context.Context, q string) ([]*models.Artist, e
 			Limit:      searchItemLimit,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("SearchArtist: SearchArtists: %w", err)
 		}
 		ret := make([]*models.Artist, len(rows))
 		for i, row := range rows {
@@ -59,7 +60,7 @@ func (d *Psql) SearchAlbums(ctx context.Context, q string) ([]*models.Album, err
 			Limit:   searchItemLimit,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("SearchAlbums: SearchReleasesBySubstring: %w", err)
 		}
 		ret := make([]*models.Album, len(rows))
 		for i, row := range rows {
@@ -72,7 +73,7 @@ func (d *Psql) SearchAlbums(ctx context.Context, q string) ([]*models.Album, err
 			}
 			err = json.Unmarshal(row.Artists, &ret[i].Artists)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("SearchAlbums: Unmarshal: %w", err)
 			}
 		}
 		return ret, nil
@@ -82,7 +83,7 @@ func (d *Psql) SearchAlbums(ctx context.Context, q string) ([]*models.Album, err
 			Limit:      searchItemLimit,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("SearchAlbums: SearchReleases: %w", err)
 		}
 		ret := make([]*models.Album, len(rows))
 		for i, row := range rows {
@@ -95,7 +96,7 @@ func (d *Psql) SearchAlbums(ctx context.Context, q string) ([]*models.Album, err
 			}
 			err = json.Unmarshal(row.Artists, &ret[i].Artists)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("SearchAlbums: Unmarshal: %w", err)
 			}
 		}
 		return ret, nil
@@ -109,7 +110,7 @@ func (d *Psql) SearchTracks(ctx context.Context, q string) ([]*models.Track, err
 			Limit:   searchItemLimit,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("SearchTracks: SearchTracksBySubstring: %w", err)
 		}
 		ret := make([]*models.Track, len(rows))
 		for i, row := range rows {
@@ -121,7 +122,7 @@ func (d *Psql) SearchTracks(ctx context.Context, q string) ([]*models.Track, err
 			}
 			err = json.Unmarshal(row.Artists, &ret[i].Artists)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("SearchTracks: Unmarshal: %w", err)
 			}
 		}
 		return ret, nil
@@ -131,7 +132,7 @@ func (d *Psql) SearchTracks(ctx context.Context, q string) ([]*models.Track, err
 			Limit:      searchItemLimit,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("SearchTracks: SearchTracks: %w", err)
 		}
 		ret := make([]*models.Track, len(rows))
 		for i, row := range rows {
@@ -143,7 +144,7 @@ func (d *Psql) SearchTracks(ctx context.Context, q string) ([]*models.Track, err
 			}
 			err = json.Unmarshal(row.Artists, &ret[i].Artists)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("SearchTracks: Unmarshal: %w", err)
 			}
 		}
 		return ret, nil

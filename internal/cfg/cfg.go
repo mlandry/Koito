@@ -17,30 +17,31 @@ const (
 
 const (
 	// BASE_URL_ENV                  = "KOITO_BASE_URL"
-	DATABASE_URL_ENV              = "KOITO_DATABASE_URL"
-	BIND_ADDR_ENV                 = "KOITO_BIND_ADDR"
-	LISTEN_PORT_ENV               = "KOITO_LISTEN_PORT"
-	ENABLE_STRUCTURED_LOGGING_ENV = "KOITO_ENABLE_STRUCTURED_LOGGING"
-	ENABLE_FULL_IMAGE_CACHE_ENV   = "KOITO_ENABLE_FULL_IMAGE_CACHE"
-	LOG_LEVEL_ENV                 = "KOITO_LOG_LEVEL"
-	MUSICBRAINZ_URL_ENV           = "KOITO_MUSICBRAINZ_URL"
-	MUSICBRAINZ_RATE_LIMIT_ENV    = "KOITO_MUSICBRAINZ_RATE_LIMIT"
-	ENABLE_LBZ_RELAY_ENV          = "KOITO_ENABLE_LBZ_RELAY"
-	LBZ_RELAY_URL_ENV             = "KOITO_LBZ_RELAY_URL"
-	LBZ_RELAY_TOKEN_ENV           = "KOITO_LBZ_RELAY_TOKEN"
-	CONFIG_DIR_ENV                = "KOITO_CONFIG_DIR"
-	DEFAULT_USERNAME_ENV          = "KOITO_DEFAULT_USERNAME"
-	DEFAULT_PASSWORD_ENV          = "KOITO_DEFAULT_PASSWORD"
-	DISABLE_DEEZER_ENV            = "KOITO_DISABLE_DEEZER"
-	DISABLE_COVER_ART_ARCHIVE_ENV = "KOITO_DISABLE_COVER_ART_ARCHIVE"
-	DISABLE_MUSICBRAINZ_ENV       = "KOITO_DISABLE_MUSICBRAINZ"
-	SKIP_IMPORT_ENV               = "KOITO_SKIP_IMPORT"
-	ALLOWED_HOSTS_ENV             = "KOITO_ALLOWED_HOSTS"
-	CORS_ORIGINS_ENV              = "KOITO_CORS_ALLOWED_ORIGINS"
-	DISABLE_RATE_LIMIT_ENV        = "KOITO_DISABLE_RATE_LIMIT"
-	THROTTLE_IMPORTS_MS           = "KOITO_THROTTLE_IMPORTS_MS"
-	IMPORT_BEFORE_UNIX_ENV        = "KOITO_IMPORT_BEFORE_UNIX"
-	IMPORT_AFTER_UNIX_ENV         = "KOITO_IMPORT_AFTER_UNIX"
+	DATABASE_URL_ENV               = "KOITO_DATABASE_URL"
+	BIND_ADDR_ENV                  = "KOITO_BIND_ADDR"
+	LISTEN_PORT_ENV                = "KOITO_LISTEN_PORT"
+	ENABLE_STRUCTURED_LOGGING_ENV  = "KOITO_ENABLE_STRUCTURED_LOGGING"
+	ENABLE_FULL_IMAGE_CACHE_ENV    = "KOITO_ENABLE_FULL_IMAGE_CACHE"
+	LOG_LEVEL_ENV                  = "KOITO_LOG_LEVEL"
+	MUSICBRAINZ_URL_ENV            = "KOITO_MUSICBRAINZ_URL"
+	MUSICBRAINZ_RATE_LIMIT_ENV     = "KOITO_MUSICBRAINZ_RATE_LIMIT"
+	ENABLE_LBZ_RELAY_ENV           = "KOITO_ENABLE_LBZ_RELAY"
+	LBZ_RELAY_URL_ENV              = "KOITO_LBZ_RELAY_URL"
+	LBZ_RELAY_TOKEN_ENV            = "KOITO_LBZ_RELAY_TOKEN"
+	CONFIG_DIR_ENV                 = "KOITO_CONFIG_DIR"
+	DEFAULT_USERNAME_ENV           = "KOITO_DEFAULT_USERNAME"
+	DEFAULT_PASSWORD_ENV           = "KOITO_DEFAULT_PASSWORD"
+	DISABLE_DEEZER_ENV             = "KOITO_DISABLE_DEEZER"
+	DISABLE_COVER_ART_ARCHIVE_ENV  = "KOITO_DISABLE_COVER_ART_ARCHIVE"
+	DISABLE_MUSICBRAINZ_ENV        = "KOITO_DISABLE_MUSICBRAINZ"
+	SKIP_IMPORT_ENV                = "KOITO_SKIP_IMPORT"
+	ALLOWED_HOSTS_ENV              = "KOITO_ALLOWED_HOSTS"
+	CORS_ORIGINS_ENV               = "KOITO_CORS_ALLOWED_ORIGINS"
+	DISABLE_RATE_LIMIT_ENV         = "KOITO_DISABLE_RATE_LIMIT"
+	THROTTLE_IMPORTS_MS            = "KOITO_THROTTLE_IMPORTS_MS"
+	IMPORT_BEFORE_UNIX_ENV         = "KOITO_IMPORT_BEFORE_UNIX"
+	IMPORT_AFTER_UNIX_ENV          = "KOITO_IMPORT_AFTER_UNIX"
+	FETCH_IMAGES_DURING_IMPORT_ENV = "KOITO_FETCH_IMAGES_DURING_IMPORT"
 )
 
 type config struct {
@@ -48,29 +49,30 @@ type config struct {
 	listenPort int
 	configDir  string
 	// baseUrl              string
-	databaseUrl          string
-	musicBrainzUrl       string
-	musicBrainzRateLimit int
-	logLevel             int
-	structuredLogging    bool
-	enableFullImageCache bool
-	lbzRelayEnabled      bool
-	lbzRelayUrl          string
-	lbzRelayToken        string
-	defaultPw            string
-	defaultUsername      string
-	disableDeezer        bool
-	disableCAA           bool
-	disableMusicBrainz   bool
-	skipImport           bool
-	allowedHosts         []string
-	allowAllHosts        bool
-	allowedOrigins       []string
-	disableRateLimit     bool
-	importThrottleMs     int
-	userAgent            string
-	importBefore         time.Time
-	importAfter          time.Time
+	databaseUrl            string
+	musicBrainzUrl         string
+	musicBrainzRateLimit   int
+	logLevel               int
+	structuredLogging      bool
+	enableFullImageCache   bool
+	lbzRelayEnabled        bool
+	lbzRelayUrl            string
+	lbzRelayToken          string
+	defaultPw              string
+	defaultUsername        string
+	disableDeezer          bool
+	disableCAA             bool
+	disableMusicBrainz     bool
+	skipImport             bool
+	fetchImageDuringImport bool
+	allowedHosts           []string
+	allowAllHosts          bool
+	allowedOrigins         []string
+	disableRateLimit       bool
+	importThrottleMs       int
+	userAgent              string
+	importBefore           time.Time
+	importAfter            time.Time
 }
 
 var (
@@ -85,7 +87,10 @@ func Load(getenv func(string) string, version string) error {
 	once.Do(func() {
 		globalConfig, err = loadConfig(getenv, version)
 	})
-	return err
+	if err != nil {
+		return fmt.Errorf("cfg.Load: %w", err)
+	}
+	return nil
 }
 
 // loadConfig loads the configuration from environment variables.
@@ -94,7 +99,7 @@ func loadConfig(getenv func(string) string, version string) (*config, error) {
 
 	cfg.databaseUrl = getenv(DATABASE_URL_ENV)
 	if cfg.databaseUrl == "" {
-		return nil, errors.New("required parameter " + DATABASE_URL_ENV + " not provided")
+		return nil, errors.New("loadConfig: required parameter " + DATABASE_URL_ENV + " not provided")
 	}
 	cfg.bindAddr = getenv(BIND_ADDR_ENV)
 	var err error
@@ -136,6 +141,7 @@ func loadConfig(getenv func(string) string, version string) (*config, error) {
 	cfg.disableRateLimit = parseBool(getenv(DISABLE_RATE_LIMIT_ENV))
 
 	cfg.structuredLogging = parseBool(getenv(ENABLE_STRUCTURED_LOGGING_ENV))
+	cfg.fetchImageDuringImport = parseBool(getenv(FETCH_IMAGES_DURING_IMPORT_ENV))
 
 	cfg.enableFullImageCache = parseBool(getenv(ENABLE_FULL_IMAGE_CACHE_ENV))
 	cfg.disableDeezer = parseBool(getenv(DISABLE_DEEZER_ENV))
@@ -210,12 +216,6 @@ func ConfigDir() string {
 	defer lock.RUnlock()
 	return globalConfig.configDir
 }
-
-// func BaseUrl() string {
-// 	lock.RLock()
-// 	defer lock.RUnlock()
-// 	return globalConfig.baseUrl
-// }
 
 func DatabaseUrl() string {
 	lock.RLock()
@@ -339,5 +339,13 @@ func ThrottleImportMs() int {
 
 // returns the before, after times, in that order
 func ImportWindow() (time.Time, time.Time) {
+	lock.RLock()
+	defer lock.RUnlock()
 	return globalConfig.importBefore, globalConfig.importAfter
+}
+
+func FetchImagesDuringImport() bool {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.fetchImageDuringImport
 }

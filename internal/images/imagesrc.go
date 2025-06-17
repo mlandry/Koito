@@ -64,7 +64,7 @@ func GetArtistImage(ctx context.Context, opts ArtistImageOpts) (string, error) {
 		}
 		return img, nil
 	}
-	l.Warn().Msg("No image providers are enabled")
+	l.Warn().Msg("GetArtistImage: No image providers are enabled")
 	return "", nil
 }
 func GetAlbumImage(ctx context.Context, opts AlbumImageOpts) (string, error) {
@@ -102,6 +102,6 @@ func GetAlbumImage(ctx context.Context, opts AlbumImageOpts) (string, error) {
 		}
 		return img, nil
 	}
-	l.Warn().Msg("No image providers are enabled")
+	l.Warn().Msg("GetAlbumImage: No image providers are enabled")
 	return "", nil
 }

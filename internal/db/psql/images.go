@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/gabehf/koito/internal/logger"
 	"github.com/gabehf/koito/internal/models"
@@ -15,15 +16,15 @@ import (
 func (d *Psql) ImageHasAssociation(ctx context.Context, image uuid.UUID) (bool, error) {
 	_, err := d.q.GetReleaseByImageID(ctx, &image)
 	if err == nil {
-		return true, err
+		return true, nil
 	} else if !errors.Is(err, pgx.ErrNoRows) {
-		return false, err
+		return false, fmt.Errorf("ImageHasAssociation: GetReleaseByImageID: %w", err)
 	}
 	_, err = d.q.GetArtistByImage(ctx, &image)
 	if err == nil {
-		return true, err
+		return true, nil
 	} else if !errors.Is(err, pgx.ErrNoRows) {
-		return false, err
+		return false, fmt.Errorf("ImageHasAssociation: GetArtistByImage: %w", err)
 	}
 	return false, nil
 }
@@ -31,15 +32,15 @@ func (d *Psql) ImageHasAssociation(ctx context.Context, image uuid.UUID) (bool, 
 func (d *Psql) GetImageSource(ctx context.Context, image uuid.UUID) (string, error) {
 	r, err := d.q.GetReleaseByImageID(ctx, &image)
 	if err == nil {
-		return r.ImageSource.String, err
+		return r.ImageSource.String, nil
 	} else if !errors.Is(err, pgx.ErrNoRows) {
-		return "", err
+		return "", fmt.Errorf("GetImageSource: GetReleaseByImageID: %w", err)
 	}
 	rr, err := d.q.GetArtistByImage(ctx, &image)
 	if err == nil {
-		return rr.ImageSource.String, err
+		return rr.ImageSource.String, nil
 	} else if !errors.Is(err, pgx.ErrNoRows) {
-		return "", err
+		return "", fmt.Errorf("GetImageSource: GetArtistByImage: %w", err)
 	}
 	return "", nil
 }
@@ -51,14 +52,13 @@ func (d *Psql) AlbumsWithoutImages(ctx context.Context, from int32) ([]*models.A
 		ID:    from,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("AlbumsWithoutImages: GetReleasesWithoutImages: %w", err)
 	}
 	albums := make([]*models.Album, len(rows))
 	for i, row := range rows {
-		artists := make([]models.SimpleArtist, 0)
-		err = json.Unmarshal(row.Artists, &artists)
-		if err != nil {
-			l.Err(err).Msgf("Error unmarshalling artists for release group with id %d", row.ID)
+		var artists []models.SimpleArtist
+		if err := json.Unmarshal(row.Artists, &artists); err != nil {
+			l.Err(err).Msgf("AlbumsWithoutImages: error unmarshalling artists for release group with id %d", row.ID)
 			artists = nil
 		}
 		albums[i] = &models.Album{

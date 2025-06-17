@@ -34,34 +34,34 @@ func New() (*Psql, error) {
 
 	config, err := pgxpool.ParseConfig(cfg.DatabaseUrl())
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse pgx config: %w", err)
+		return nil, fmt.Errorf("psql.New: failed to parse pgx config: %w", err)
 	}
 
 	config.ConnConfig.ConnectTimeout = 15 * time.Second
 
 	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create pgx pool: %w", err)
+		return nil, fmt.Errorf("psql.New: failed to create pgx pool: %w", err)
 	}
 
 	if err := pool.Ping(ctx); err != nil {
 		pool.Close()
-		return nil, fmt.Errorf("database not reachable: %w", err)
+		return nil, fmt.Errorf("psql.New: database not reachable: %w", err)
 	}
 
 	sqlDB, err := sql.Open("pgx", cfg.DatabaseUrl())
 	if err != nil {
-		return nil, fmt.Errorf("failed to open db for migrations: %w", err)
+		return nil, fmt.Errorf("psql.New: failed to open db for migrations: %w", err)
 	}
 
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
-		return nil, fmt.Errorf("unable to get caller info")
+		return nil, fmt.Errorf("psql.New: unable to get caller info")
 	}
 	migrationsPath := filepath.Join(filepath.Dir(filename), "..", "..", "..", "db", "migrations")
 
 	if err := goose.Up(sqlDB, migrationsPath); err != nil {
-		return nil, fmt.Errorf("goose failed: %w", err)
+		return nil, fmt.Errorf("psql.New: goose failed: %w", err)
 	}
 	_ = sqlDB.Close()
 

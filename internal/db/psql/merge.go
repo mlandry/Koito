@@ -71,7 +71,7 @@ func (d *Psql) MergeAlbums(ctx context.Context, fromId, toId int32, replaceImage
 
 	fromArtists, err := qtx.GetReleaseArtists(ctx, fromId)
 	if err != nil {
-		return fmt.Errorf("MergeTracks: GetReleaseArtists: %w", err)
+		return fmt.Errorf("MergeAlbums: GetReleaseArtists: %w", err)
 	}
 
 	err = qtx.UpdateReleaseForAll(ctx, repository.UpdateReleaseForAllParams{

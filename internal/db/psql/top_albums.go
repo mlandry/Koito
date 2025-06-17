@@ -3,6 +3,7 @@ package psql
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/gabehf/koito/internal/db"
@@ -17,7 +18,7 @@ func (d *Psql) GetTopAlbumsPaginated(ctx context.Context, opts db.GetItemsOpts) 
 	offset := (opts.Page - 1) * opts.Limit
 	t1, t2, err := utils.DateRange(opts.Week, opts.Month, opts.Year)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetTopAlbumsPaginated: %w", err)
 	}
 	if opts.Month == 0 && opts.Year == 0 {
 		// use period, not date range
@@ -43,7 +44,7 @@ func (d *Psql) GetTopAlbumsPaginated(ctx context.Context, opts db.GetItemsOpts) 
 			ListenedAt_2: t2,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetTopAlbumsPaginated: GetTopReleasesFromArtist: %w", err)
 		}
 		rgs = make([]*models.Album, len(rows))
 		l.Debug().Msgf("Database responded with %d items", len(rows))
@@ -52,7 +53,7 @@ func (d *Psql) GetTopAlbumsPaginated(ctx context.Context, opts db.GetItemsOpts) 
 			err = json.Unmarshal(v.Artists, &artists)
 			if err != nil {
 				l.Err(err).Msgf("Error unmarshalling artists for release group with id %d", v.ID)
-				artists = nil
+				return nil, fmt.Errorf("GetTopAlbumsPaginated: Unmarshal: %w", err)
 			}
 			rgs[i] = &models.Album{
 				ID:             v.ID,
@@ -66,7 +67,7 @@ func (d *Psql) GetTopAlbumsPaginated(ctx context.Context, opts db.GetItemsOpts) 
 		}
 		count, err = d.q.CountReleasesFromArtist(ctx, int32(opts.ArtistID))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetTopAlbumsPaginated: CountReleasesFromArtist: %w", err)
 		}
 	} else {
 		l.Debug().Msgf("Fetching top %d albums with period %s on page %d from range %v to %v",
@@ -78,7 +79,7 @@ func (d *Psql) GetTopAlbumsPaginated(ctx context.Context, opts db.GetItemsOpts) 
 			Offset:       int32(offset),
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetTopAlbumsPaginated: GetTopReleasesPaginated: %w", err)
 		}
 		rgs = make([]*models.Album, len(rows))
 		l.Debug().Msgf("Database responded with %d items", len(rows))
@@ -87,7 +88,7 @@ func (d *Psql) GetTopAlbumsPaginated(ctx context.Context, opts db.GetItemsOpts) 
 			err = json.Unmarshal(row.Artists, &artists)
 			if err != nil {
 				l.Err(err).Msgf("Error unmarshalling artists for release group with id %d", row.ID)
-				artists = nil
+				return nil, fmt.Errorf("GetTopAlbumsPaginated: Unmarshal: %w", err)
 			}
 			t := &models.Album{
 				Title:          row.Title,
@@ -105,7 +106,7 @@ func (d *Psql) GetTopAlbumsPaginated(ctx context.Context, opts db.GetItemsOpts) 
 			ListenedAt_2: t2,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetTopAlbumsPaginated: CountTopReleases: %w", err)
 		}
 		l.Debug().Msgf("Database responded with %d albums out of a total %d", len(rows), count)
 	}

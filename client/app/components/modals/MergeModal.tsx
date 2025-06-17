@@ -34,15 +34,11 @@ export default function MergeModal(props: Props) {
     }
 
     const toggleSelect = ({title, id}: {title: string, id: number}) => {
-        if (mergeTarget.id === 0) {
-            setMergeTarget({title: title, id: id})
-        } else {
-            setMergeTarget({title:"", id: 0})
-        }
+        setMergeTarget({title: title, id: id})
     }
 
     useEffect(() => {
-        console.log(mergeTarget)
+        console.log("mergeTarget",mergeTarget)
     }, [mergeTarget])
 
     const doMerge = () => {

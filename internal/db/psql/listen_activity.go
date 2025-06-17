@@ -3,6 +3,7 @@ package psql
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/gabehf/koito/internal/db"
 	"github.com/gabehf/koito/internal/logger"
@@ -30,7 +31,7 @@ func (d *Psql) GetListenActivity(ctx context.Context, opts db.ListenActivityOpts
 			ReleaseID: opts.AlbumID,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetListenActivity: ListenActivityForRelease: %w", err)
 		}
 		listenActivity = make([]db.ListenActivityItem, len(rows))
 		for i, row := range rows {
@@ -51,7 +52,7 @@ func (d *Psql) GetListenActivity(ctx context.Context, opts db.ListenActivityOpts
 			ArtistID: opts.ArtistID,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetListenActivity: ListenActivityForArtist: %w", err)
 		}
 		listenActivity = make([]db.ListenActivityItem, len(rows))
 		for i, row := range rows {
@@ -72,7 +73,7 @@ func (d *Psql) GetListenActivity(ctx context.Context, opts db.ListenActivityOpts
 			ID:      opts.TrackID,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetListenActivity: ListenActivityForTrack: %w", err)
 		}
 		listenActivity = make([]db.ListenActivityItem, len(rows))
 		for i, row := range rows {
@@ -92,7 +93,7 @@ func (d *Psql) GetListenActivity(ctx context.Context, opts db.ListenActivityOpts
 			Column3: stepToInterval(opts.Step),
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetListenActivity: ListenActivity: %w", err)
 		}
 		listenActivity = make([]db.ListenActivityItem, len(rows))
 		for i, row := range rows {

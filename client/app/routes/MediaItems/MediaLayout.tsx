@@ -7,8 +7,8 @@ import { useAppContext } from "~/providers/AppProvider";
 import MergeModal from "~/components/modals/MergeModal";
 import ImageReplaceModal from "~/components/modals/ImageReplaceModal";
 import DeleteModal from "~/components/modals/DeleteModal";
-import RenameModal from "~/components/modals/EditModal";
-import EditModal from "~/components/modals/EditModal";
+import RenameModal from "~/components/modals/EditModal/EditModal";
+import EditModal from "~/components/modals/EditModal/EditModal";
 
 export type MergeFunc = (from: number, to: number, replaceImage: boolean) => Promise<Response>
 export type MergeSearchCleanerFunc = (r: SearchResponse, id: number) => SearchResponse
@@ -69,9 +69,9 @@ export default function MediaLayout(props: Props) {
         content={title}
         />
             <div className="w-19/20 mx-auto pt-12">
-                <div className="flex gap-8 flex-wrap relative">
+                <div className="flex gap-8 flex-wrap md:flex-nowrap relative">
                     <div className="flex flex-col justify-around">
-                        <img style={{zIndex: 5}} src={imageUrl(props.img, "large")} alt={props.title} className="md:w-sm w-[220px] h-auto shadow-(--color-shadow) shadow-lg" />
+                        <img style={{zIndex: 5}} src={imageUrl(props.img, "large")} alt={props.title} className="md:min-w-[385px] w-[220px] h-auto shadow-(--color-shadow) shadow-lg" />
                     </div>
                     <div className="flex flex-col items-start">
                         <h3>{props.type}</h3>

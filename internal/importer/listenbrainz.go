@@ -141,11 +141,12 @@ func ImportListenBrainzFile(ctx context.Context, store db.DB, mbzc mbz.MusicBrai
 			Time:               ts,
 			UserID:             1,
 			Client:             client,
+			SkipCacheImage:     !cfg.FetchImagesDuringImport(),
 		}
 		err = catalog.SubmitListen(ctx, store, opts)
 		if err != nil {
 			l.Err(err).Msg("Failed to import LastFM playback item")
-			return err
+			return fmt.Errorf("ImportListenBrainzFile: %w", err)
 		}
 		count++
 		throttleFunc()

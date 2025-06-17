@@ -3,6 +3,7 @@ package psql
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/gabehf/koito/internal/models"
@@ -19,7 +20,7 @@ func (d *Psql) SaveSession(ctx context.Context, userID int32, expiresAt time.Tim
 		Persistent: persistent,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("SaveSession: InsertSession: %w", err)
 	}
 	return &models.Session{
 		ID:         session.ID,
@@ -47,7 +48,7 @@ func (d *Psql) GetUserBySession(ctx context.Context, sessionId uuid.UUID) (*mode
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("SaveSession: GetUserBySession: %w", err)
 	}
 
 	return &models.User{

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -40,44 +39,43 @@ func GetAliasesHandler(store db.DB) http.HandlerFunc {
 		if artistIDStr != "" {
 			artistID, err := strconv.Atoi(artistIDStr)
 			if err != nil {
-				l.Debug().AnErr("error", fmt.Errorf("GetAliasesHandler: %w", err)).Msg("Invalid artist id")
+				l.Debug().AnErr("error", err).Msg("GetAliasesHandler: Invalid artist id")
 				utils.WriteError(w, "invalid artist_id", http.StatusBadRequest)
 				return
 			}
 			aliases, err = store.GetAllArtistAliases(ctx, int32(artistID))
 			if err != nil {
-				l.Err(fmt.Errorf("GetAliasesHandler: %w", err)).Msg("Failed to get artist aliases")
+				l.Err(err).Msg("GetAliasesHandler: Failed to get artist aliases")
 				utils.WriteError(w, "failed to retrieve aliases", http.StatusInternalServerError)
 				return
 			}
 		} else if albumIDStr != "" {
 			albumID, err := strconv.Atoi(albumIDStr)
 			if err != nil {
-				l.Debug().AnErr("error", fmt.Errorf("GetAliasesHandler: %w", err)).Msg("Invalid album id")
+				l.Debug().AnErr("error", err).Msg("GetAliasesHandler: Invalid album id")
 				utils.WriteError(w, "invalid album_id", http.StatusBadRequest)
 				return
 			}
 			aliases, err = store.GetAllAlbumAliases(ctx, int32(albumID))
 			if err != nil {
-				l.Err(fmt.Errorf("GetAliasesHandler: %w", err)).Msg("Failed to get album aliases")
+				l.Err(err).Msg("GetAliasesHandler: Failed to get album aliases")
 				utils.WriteError(w, "failed to retrieve aliases", http.StatusInternalServerError)
 				return
 			}
 		} else if trackIDStr != "" {
 			trackID, err := strconv.Atoi(trackIDStr)
 			if err != nil {
-				l.Debug().AnErr("error", fmt.Errorf("GetAliasesHandler: %w", err)).Msg("Invalid track id")
+				l.Debug().AnErr("error", err).Msg("GetAliasesHandler: Invalid track id")
 				utils.WriteError(w, "invalid track_id", http.StatusBadRequest)
 				return
 			}
 			aliases, err = store.GetAllTrackAliases(ctx, int32(trackID))
 			if err != nil {
-				l.Err(fmt.Errorf("GetAliasesHandler: %w", err)).Msg("Failed to get track aliases")
+				l.Err(err).Msg("GetAliasesHandler: Failed to get track aliases")
 				utils.WriteError(w, "failed to retrieve aliases", http.StatusInternalServerError)
 				return
 			}
 		}
-
 		utils.WriteJSON(w, http.StatusOK, aliases)
 	}
 }
@@ -88,7 +86,7 @@ func DeleteAliasHandler(store db.DB) http.HandlerFunc {
 		ctx := r.Context()
 		l := logger.FromContext(ctx)
 
-		l.Debug().Msgf("DeleteAliasHandler: Got request with params: '%s'", r.URL.Query().Encode())
+		l.Debug().Msg("DeleteAliasHandler: Got request")
 
 		// Parse query parameters
 		artistIDStr := r.URL.Query().Get("artist_id")
@@ -97,52 +95,56 @@ func DeleteAliasHandler(store db.DB) http.HandlerFunc {
 		alias := r.URL.Query().Get("alias")
 
 		if alias == "" || (artistIDStr == "" && albumIDStr == "" && trackIDStr == "") {
-			l.Debug().Msgf("DeleteAliasHandler: Request is missing required parameters")
+			l.Debug().Msg("DeleteAliasHandler: Request is missing required parameters")
 			utils.WriteError(w, "alias and artist_id, album_id, or track_id must be provided", http.StatusBadRequest)
 			return
 		}
 		if utils.MoreThanOneString(artistIDStr, albumIDStr, trackIDStr) {
-			l.Debug().Msgf("DeleteAliasHandler: Request is has more than one of artist_id, album_id, and track_id")
+			l.Debug().Msg("DeleteAliasHandler: Request has more than one of artist_id, album_id, and track_id")
 			utils.WriteError(w, "only one of artist_id, album_id, or track_id can be provided at a time", http.StatusBadRequest)
 			return
 		}
 
+		var err error
 		if artistIDStr != "" {
-			artistID, err := strconv.Atoi(artistIDStr)
+			var artistID int
+			artistID, err = strconv.Atoi(artistIDStr)
 			if err != nil {
-				l.Debug().AnErr("error", fmt.Errorf("DeleteAliasHandler: %w", err)).Msg("Invalid artist id")
+				l.Debug().AnErr("error", err).Msg("DeleteAliasHandler: Invalid artist id")
 				utils.WriteError(w, "invalid artist_id", http.StatusBadRequest)
 				return
 			}
 			err = store.DeleteArtistAlias(ctx, int32(artistID), alias)
 			if err != nil {
-				l.Err(fmt.Errorf("DeleteAliasHandler: %w", err)).Msg("Failed to delete artist alias")
+				l.Error().Err(err).Msg("DeleteAliasHandler: Failed to delete artist alias")
 				utils.WriteError(w, "failed to delete alias", http.StatusInternalServerError)
 				return
 			}
 		} else if albumIDStr != "" {
-			albumID, err := strconv.Atoi(albumIDStr)
+			var albumID int
+			albumID, err = strconv.Atoi(albumIDStr)
 			if err != nil {
-				l.Debug().AnErr("error", fmt.Errorf("DeleteAliasHandler: %w", err)).Msg("Invalid album id")
+				l.Debug().AnErr("error", err).Msg("DeleteAliasHandler: Invalid album id")
 				utils.WriteError(w, "invalid album_id", http.StatusBadRequest)
 				return
 			}
 			err = store.DeleteAlbumAlias(ctx, int32(albumID), alias)
 			if err != nil {
-				l.Err(fmt.Errorf("DeleteAliasHandler: %w", err)).Msg("Failed to delete album alias")
+				l.Error().Err(err).Msg("DeleteAliasHandler: Failed to delete album alias")
 				utils.WriteError(w, "failed to delete alias", http.StatusInternalServerError)
 				return
 			}
 		} else if trackIDStr != "" {
-			trackID, err := strconv.Atoi(trackIDStr)
+			var trackID int
+			trackID, err = strconv.Atoi(trackIDStr)
 			if err != nil {
-				l.Debug().AnErr("error", fmt.Errorf("DeleteAliasHandler: %w", err)).Msg("Invalid track id")
+				l.Debug().AnErr("error", err).Msg("DeleteAliasHandler: Invalid track id")
 				utils.WriteError(w, "invalid track_id", http.StatusBadRequest)
 				return
 			}
 			err = store.DeleteTrackAlias(ctx, int32(trackID), alias)
 			if err != nil {
-				l.Err(fmt.Errorf("DeleteAliasHandler: %w", err)).Msg("Failed to delete track alias")
+				l.Error().Err(err).Msg("DeleteAliasHandler: Failed to delete track alias")
 				utils.WriteError(w, "failed to delete alias", http.StatusInternalServerError)
 				return
 			}
@@ -158,16 +160,18 @@ func CreateAliasHandler(store db.DB) http.HandlerFunc {
 		ctx := r.Context()
 		l := logger.FromContext(ctx)
 
-		l.Debug().Msgf("CreateAliasHandler: Got request with params: '%s'", r.URL.Query().Encode())
+		l.Debug().Msg("CreateAliasHandler: Got request")
 
 		err := r.ParseForm()
 		if err != nil {
+			l.Debug().AnErr("error", err).Msg("CreateAliasHandler: Failed to parse form")
 			utils.WriteError(w, "invalid request body", http.StatusBadRequest)
 			return
 		}
 
 		alias := r.FormValue("alias")
 		if alias == "" {
+			l.Debug().Msg("CreateAliasHandler: Alias parameter missing")
 			utils.WriteError(w, "alias must be provided", http.StatusBadRequest)
 			return
 		}
@@ -176,53 +180,54 @@ func CreateAliasHandler(store db.DB) http.HandlerFunc {
 		albumIDStr := r.URL.Query().Get("album_id")
 		trackIDStr := r.URL.Query().Get("track_id")
 
-		if alias == "" || (artistIDStr == "" && albumIDStr == "" && trackIDStr == "") {
-			l.Debug().Msgf("CreateAliasHandler: Request is missing required parameters")
-			utils.WriteError(w, "alias and artist_id, album_id, or track_id must be provided", http.StatusBadRequest)
+		if artistIDStr == "" && albumIDStr == "" && trackIDStr == "" {
+			l.Debug().Msg("CreateAliasHandler: Missing ID parameter")
+			utils.WriteError(w, "artist_id, album_id, or track_id must be provided", http.StatusBadRequest)
 			return
 		}
 		if utils.MoreThanOneString(artistIDStr, albumIDStr, trackIDStr) {
-			l.Debug().Msgf("CreateAliasHandler: Request is has more than one of artist_id, album_id, and track_id")
-			utils.WriteError(w, "only one of artist_id, album_id, or track_id can be provided at a time", http.StatusBadRequest)
+			l.Debug().Msg("CreateAliasHandler: Multiple ID parameters provided")
+			utils.WriteError(w, "only one of artist_id, album_id, or track_id can be provided", http.StatusBadRequest)
 			return
 		}
 
+		var id int
 		if artistIDStr != "" {
-			artistID, err := strconv.Atoi(artistIDStr)
+			id, err = strconv.Atoi(artistIDStr)
 			if err != nil {
-				l.Debug().AnErr("error", fmt.Errorf("CreateAliasHandler: %w", err)).Msg("Invalid artist id")
+				l.Debug().AnErr("error", err).Msg("CreateAliasHandler: Invalid artist id")
 				utils.WriteError(w, "invalid artist_id", http.StatusBadRequest)
 				return
 			}
-			err = store.SaveArtistAliases(ctx, int32(artistID), []string{alias}, "Manual")
+			err = store.SaveArtistAliases(ctx, int32(id), []string{alias}, "Manual")
 			if err != nil {
-				l.Err(fmt.Errorf("CreateAliasHandler: %w", err)).Msg("Failed to save artist alias")
+				l.Error().Err(err).Msg("CreateAliasHandler: Failed to save artist alias")
 				utils.WriteError(w, "failed to save alias", http.StatusInternalServerError)
 				return
 			}
 		} else if albumIDStr != "" {
-			albumID, err := strconv.Atoi(albumIDStr)
+			id, err = strconv.Atoi(albumIDStr)
 			if err != nil {
-				l.Debug().AnErr("error", fmt.Errorf("CreateAliasHandler: %w", err)).Msg("Invalid album id")
+				l.Debug().AnErr("error", err).Msg("CreateAliasHandler: Invalid album id")
 				utils.WriteError(w, "invalid album_id", http.StatusBadRequest)
 				return
 			}
-			err = store.SaveAlbumAliases(ctx, int32(albumID), []string{alias}, "Manual")
+			err = store.SaveAlbumAliases(ctx, int32(id), []string{alias}, "Manual")
 			if err != nil {
-				l.Err(fmt.Errorf("CreateAliasHandler: %w", err)).Msg("Failed to save album alias")
+				l.Error().Err(err).Msg("CreateAliasHandler: Failed to save album alias")
 				utils.WriteError(w, "failed to save alias", http.StatusInternalServerError)
 				return
 			}
 		} else if trackIDStr != "" {
-			trackID, err := strconv.Atoi(trackIDStr)
+			id, err = strconv.Atoi(trackIDStr)
 			if err != nil {
-				l.Debug().AnErr("error", fmt.Errorf("CreateAliasHandler: %w", err)).Msg("Invalid track id")
+				l.Debug().AnErr("error", err).Msg("CreateAliasHandler: Invalid track id")
 				utils.WriteError(w, "invalid track_id", http.StatusBadRequest)
 				return
 			}
-			err = store.SaveTrackAliases(ctx, int32(trackID), []string{alias}, "Manual")
+			err = store.SaveTrackAliases(ctx, int32(id), []string{alias}, "Manual")
 			if err != nil {
-				l.Err(fmt.Errorf("CreateAliasHandler: %w", err)).Msg("Failed to save track alias")
+				l.Error().Err(err).Msg("CreateAliasHandler: Failed to save track alias")
 				utils.WriteError(w, "failed to save alias", http.StatusInternalServerError)
 				return
 			}
@@ -238,7 +243,7 @@ func SetPrimaryAliasHandler(store db.DB) http.HandlerFunc {
 		ctx := r.Context()
 		l := logger.FromContext(ctx)
 
-		l.Debug().Msgf("SetPrimaryAliasHandler: Got request with params: '%s'", r.URL.Query().Encode())
+		l.Debug().Msg("SetPrimaryAliasHandler: Got request")
 
 		// Parse query parameters
 		artistIDStr := r.URL.Query().Get("artist_id")
@@ -246,53 +251,60 @@ func SetPrimaryAliasHandler(store db.DB) http.HandlerFunc {
 		trackIDStr := r.URL.Query().Get("track_id")
 		alias := r.URL.Query().Get("alias")
 
-		if alias == "" || (artistIDStr == "" && albumIDStr == "" && trackIDStr == "") {
-			l.Debug().Msgf("SetPrimaryAliasHandler: Request is missing required parameters")
-			utils.WriteError(w, "alias and artist_id, album_id, or track_id must be provided", http.StatusBadRequest)
+		if alias == "" {
+			l.Debug().Msg("SetPrimaryAliasHandler: Missing alias parameter")
+			utils.WriteError(w, "alias must be provided", http.StatusBadRequest)
+			return
+		}
+		if artistIDStr == "" && albumIDStr == "" && trackIDStr == "" {
+			l.Debug().Msg("SetPrimaryAliasHandler: Missing ID parameter")
+			utils.WriteError(w, "artist_id, album_id, or track_id must be provided", http.StatusBadRequest)
 			return
 		}
 		if utils.MoreThanOneString(artistIDStr, albumIDStr, trackIDStr) {
-			l.Debug().Msgf("SetPrimaryAliasHandler: Request is has more than one of artist_id, album_id, and track_id")
-			utils.WriteError(w, "only one of artist_id, album_id, or track_id can be provided at a time", http.StatusBadRequest)
+			l.Debug().Msg("SetPrimaryAliasHandler: Multiple ID parameters provided")
+			utils.WriteError(w, "only one of artist_id, album_id, or track_id can be provided", http.StatusBadRequest)
 			return
 		}
 
+		var id int
+		var err error
 		if artistIDStr != "" {
-			artistID, err := strconv.Atoi(artistIDStr)
+			id, err = strconv.Atoi(artistIDStr)
 			if err != nil {
-				l.Debug().AnErr("error", fmt.Errorf("SetPrimaryAliasHandler: %w", err)).Msg("Invalid artist id")
+				l.Debug().AnErr("error", err).Msg("SetPrimaryAliasHandler: Invalid artist id")
 				utils.WriteError(w, "invalid artist_id", http.StatusBadRequest)
 				return
 			}
-			err = store.SetPrimaryArtistAlias(ctx, int32(artistID), alias)
+			err = store.SetPrimaryArtistAlias(ctx, int32(id), alias)
 			if err != nil {
-				l.Err(fmt.Errorf("SetPrimaryAliasHandler: %w", err)).Msg("Failed to set artist primary alias")
+				l.Error().Err(err).Msg("SetPrimaryAliasHandler: Failed to set artist primary alias")
 				utils.WriteError(w, "failed to set primary alias", http.StatusInternalServerError)
 				return
 			}
 		} else if albumIDStr != "" {
-			albumID, err := strconv.Atoi(albumIDStr)
+			id, err = strconv.Atoi(albumIDStr)
 			if err != nil {
-				l.Debug().AnErr("error", fmt.Errorf("SetPrimaryAliasHandler: %w", err)).Msg("Invalid album id")
+				l.Debug().AnErr("error", err).Msg("SetPrimaryAliasHandler: Invalid album id")
 				utils.WriteError(w, "invalid album_id", http.StatusBadRequest)
 				return
 			}
-			err = store.SetPrimaryAlbumAlias(ctx, int32(albumID), alias)
+			err = store.SetPrimaryAlbumAlias(ctx, int32(id), alias)
 			if err != nil {
-				l.Err(fmt.Errorf("SetPrimaryAliasHandler: %w", err)).Msg("Failed to set album primary alias")
+				l.Error().Err(err).Msg("SetPrimaryAliasHandler: Failed to set album primary alias")
 				utils.WriteError(w, "failed to set primary alias", http.StatusInternalServerError)
 				return
 			}
 		} else if trackIDStr != "" {
-			trackID, err := strconv.Atoi(trackIDStr)
+			id, err = strconv.Atoi(trackIDStr)
 			if err != nil {
-				l.Debug().AnErr("error", fmt.Errorf("SetPrimaryAliasHandler: %w", err)).Msg("Invalid track id")
+				l.Debug().AnErr("error", err).Msg("SetPrimaryAliasHandler: Invalid track id")
 				utils.WriteError(w, "invalid track_id", http.StatusBadRequest)
 				return
 			}
-			err = store.SetPrimaryTrackAlias(ctx, int32(trackID), alias)
+			err = store.SetPrimaryTrackAlias(ctx, int32(id), alias)
 			if err != nil {
-				l.Err(fmt.Errorf("SetPrimaryAliasHandler: %w", err)).Msg("Failed to set track primary alias")
+				l.Error().Err(err).Msg("SetPrimaryAliasHandler: Failed to set track primary alias")
 				utils.WriteError(w, "failed to set primary alias", http.StatusInternalServerError)
 				return
 			}

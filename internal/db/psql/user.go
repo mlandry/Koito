@@ -3,6 +3,7 @@ package psql
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -21,7 +22,7 @@ func (d *Psql) GetUserByUsername(ctx context.Context, username string) (*models.
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetUserByUsername: %w", err)
 	}
 	return &models.User{
 		ID:       row.ID,
@@ -37,7 +38,7 @@ func (d *Psql) GetUserByApiKey(ctx context.Context, key string) (*models.User, e
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetUserByApiKey: %w", err)
 	}
 	return &models.User{
 		ID:       row.ID,
@@ -52,12 +53,12 @@ func (d *Psql) SaveUser(ctx context.Context, opts db.SaveUserOpts) (*models.User
 	err := ValidateUsername(opts.Username)
 	if err != nil {
 		l.Debug().AnErr("validator_notice", err).Msgf("Username failed validation: %s", opts.Username)
-		return nil, err
+		return nil, fmt.Errorf("SaveUser: ValidateUsername: %w", err)
 	}
 	pw, err := ValidateAndNormalizePassword(opts.Password)
 	if err != nil {
 		l.Debug().AnErr("validator_notice", err).Msgf("Password failed validation")
-		return nil, err
+		return nil, fmt.Errorf("SaveUser: ValidateAndNormalizePassword: %w", err)
 	}
 	if opts.Role == "" {
 		opts.Role = models.UserRoleUser
@@ -65,7 +66,7 @@ func (d *Psql) SaveUser(ctx context.Context, opts db.SaveUserOpts) (*models.User
 	hashPw, err := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
 	if err != nil {
 		l.Err(err).Msg("Failed to generate hashed password")
-		return nil, err
+		return nil, fmt.Errorf("SaveUser: bcrypt.GenerateFromPassword: %w", err)
 	}
 	u, err := d.q.InsertUser(ctx, repository.InsertUserParams{
 		Username: strings.ToLower(opts.Username),
@@ -73,7 +74,7 @@ func (d *Psql) SaveUser(ctx context.Context, opts db.SaveUserOpts) (*models.User
 		Role:     repository.Role(opts.Role),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("SaveUser: InsertUser: %w", err)
 	}
 	return &models.User{
 		ID:       u.ID,
@@ -88,7 +89,7 @@ func (d *Psql) SaveApiKey(ctx context.Context, opts db.SaveApiKeyOpts) (*models.
 		UserID: opts.UserID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("SaveApiKey: InsertApiKey: %w", err)
 	}
 	return &models.ApiKey{
 		ID:        row.ID,
@@ -107,7 +108,7 @@ func (d *Psql) UpdateUser(ctx context.Context, opts db.UpdateUserOpts) error {
 	tx, err := d.conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		l.Err(err).Msg("Failed to begin transaction")
-		return err
+		return fmt.Errorf("UpdateUser: BeginTx: %w", err)
 	}
 	defer tx.Rollback(ctx)
 	qtx := d.q.WithTx(tx)
@@ -115,33 +116,33 @@ func (d *Psql) UpdateUser(ctx context.Context, opts db.UpdateUserOpts) error {
 		err := ValidateUsername(opts.Username)
 		if err != nil {
 			l.Debug().AnErr("validator_notice", err).Msgf("Username failed validation: %s", opts.Username)
-			return err
+			return fmt.Errorf("UpdateUser: ValidateUsername: %w", err)
 		}
 		err = qtx.UpdateUserUsername(ctx, repository.UpdateUserUsernameParams{
 			ID:       opts.ID,
 			Username: opts.Username,
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("UpdateUser: UpdateUserUsername: %w", err)
 		}
 	}
 	if opts.Password != "" {
 		pw, err := ValidateAndNormalizePassword(opts.Password)
 		if err != nil {
 			l.Debug().AnErr("validator_notice", err).Msgf("Password failed validation")
-			return err
+			return fmt.Errorf("UpdateUser: ValidateAndNormalizePassword: %w", err)
 		}
 		hashPw, err := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
 		if err != nil {
 			l.Err(err).Msg("Failed to generate hashed password")
-			return err
+			return fmt.Errorf("UpdateUser: bcrypt.GenerateFromPassword: %w", err)
 		}
 		err = qtx.UpdateUserPassword(ctx, repository.UpdateUserPasswordParams{
 			ID:       opts.ID,
 			Password: hashPw,
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("UpdateUser: UpdateUserPassword: %w", err)
 		}
 	}
 	return tx.Commit(ctx)
@@ -150,7 +151,7 @@ func (d *Psql) UpdateUser(ctx context.Context, opts db.UpdateUserOpts) error {
 func (d *Psql) GetApiKeysByUserID(ctx context.Context, id int32) ([]models.ApiKey, error) {
 	rows, err := d.q.GetAllApiKeysByUserID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetApiKeysByUserID: %w", err)
 	}
 	keys := make([]models.ApiKey, len(rows))
 	for i, row := range rows {

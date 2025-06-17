@@ -137,13 +137,13 @@ func LbzSubmitListenHandler(store db.DB, mbzc mbz.MusicBrainzCaller) func(w http
 
 			artistMbzIDs, err := utils.ParseUUIDSlice(payload.TrackMeta.AdditionalInfo.ArtistMBIDs)
 			if err != nil {
-				l.Debug().Err(err).Msg("LbzSubmitListenHandler: Failed to parse one or more UUIDs")
+				l.Debug().AnErr("error", err).Msg("LbzSubmitListenHandler: Failed to parse one or more UUIDs")
 			}
 			if len(artistMbzIDs) < 1 {
-				l.Debug().Err(err).Msg("LbzSubmitListenHandler: Attempting to parse artist UUIDs from mbid_mapping")
+				l.Debug().AnErr("error", err).Msg("LbzSubmitListenHandler: Attempting to parse artist UUIDs from mbid_mapping")
 				utils.ParseUUIDSlice(payload.TrackMeta.MBIDMapping.ArtistMBIDs)
 				if err != nil {
-					l.Debug().Err(err).Msg("LbzSubmitListenHandler: Failed to parse one or more UUIDs")
+					l.Debug().AnErr("error", err).Msg("LbzSubmitListenHandler: Failed to parse one or more UUIDs")
 				}
 			}
 			rgMbzID, err := uuid.Parse(payload.TrackMeta.AdditionalInfo.ReleaseGroupMBID)
@@ -191,7 +191,7 @@ func LbzSubmitListenHandler(store db.DB, mbzc mbz.MusicBrainzCaller) func(w http
 				}
 				mbid, err := uuid.Parse(a.ArtistMBID)
 				if err != nil {
-					l.Err(err).Msgf("LbzSubmitListenHandler: Failed to parse UUID for artist '%s'", a.ArtistName)
+					l.Debug().AnErr("error", err).Msgf("LbzSubmitListenHandler: Failed to parse UUID for artist '%s'", a.ArtistName)
 				}
 				artistMbidMap = append(artistMbidMap, catalog.ArtistMbidMap{Artist: a.ArtistName, Mbid: mbid})
 			}

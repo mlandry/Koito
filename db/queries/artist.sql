@@ -14,22 +14,24 @@ GROUP BY a.id, a.musicbrainz_id, a.image, a.image_source, a.name;
 
 -- name: GetTrackArtists :many
 SELECT 
-  a.*
+  a.*,
+  at.is_primary as is_primary
 FROM artists_with_name a
 LEFT JOIN artist_tracks at ON a.id = at.artist_id
 WHERE at.track_id = $1
-GROUP BY a.id, a.musicbrainz_id, a.image, a.image_source, a.name;
+GROUP BY a.id, a.musicbrainz_id, a.image, a.image_source, a.name, at.is_primary;
 
 -- name: GetArtistByImage :one
 SELECT * FROM artists WHERE image = $1 LIMIT 1;
 
 -- name: GetReleaseArtists :many
 SELECT 
-  a.*
+  a.*,
+  ar.is_primary as is_primary
 FROM artists_with_name a
 LEFT JOIN artist_releases ar ON a.id = ar.artist_id
 WHERE ar.release_id = $1
-GROUP BY a.id, a.musicbrainz_id, a.image, a.image_source, a.name;
+GROUP BY a.id, a.musicbrainz_id, a.image, a.image_source, a.name, ar.is_primary;
 
 -- name: GetArtistByName :one
 WITH artist_with_aliases AS (

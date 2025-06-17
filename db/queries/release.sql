@@ -33,12 +33,7 @@ LIMIT 1;
 SELECT
   r.*,
   COUNT(*) AS listen_count,
-  (
-    SELECT json_agg(DISTINCT jsonb_build_object('id', a.id, 'name', a.name))
-    FROM artists_with_name a
-    JOIN artist_releases ar ON ar.artist_id = a.id
-    WHERE ar.release_id = r.id
-  ) AS artists
+  get_artists_for_release(r.id) AS artists
 FROM listens l
 JOIN tracks t ON l.track_id = t.id
 JOIN releases_with_title r ON t.release_id = r.id
@@ -53,12 +48,7 @@ LIMIT $3 OFFSET $4;
 SELECT
   r.*,
   COUNT(*) AS listen_count,
-  (
-    SELECT json_agg(DISTINCT jsonb_build_object('id', a.id, 'name', a.name))
-    FROM artists_with_name a
-    JOIN artist_releases ar ON ar.artist_id = a.id
-    WHERE ar.release_id = r.id
-  ) AS artists
+  get_artists_for_release(r.id) AS artists
 FROM listens l
 JOIN tracks t ON l.track_id = t.id
 JOIN releases_with_title r ON t.release_id = r.id
@@ -88,12 +78,7 @@ ON CONFLICT DO NOTHING;
 -- name: GetReleasesWithoutImages :many
 SELECT
   r.*,
-  (
-    SELECT json_agg(DISTINCT jsonb_build_object('id', a.id, 'name', a.name))
-    FROM artists_with_name a
-    JOIN artist_releases ar ON a.id = ar.artist_id
-    WHERE ar.release_id = r.id
-  ) AS artists
+  get_artists_for_release(r.id) AS artists
 FROM releases_with_title r 
 WHERE r.image IS NULL 
   AND r.id > $2
@@ -107,6 +92,10 @@ WHERE id = $1;
 -- name: UpdateReleaseVariousArtists :exec
 UPDATE releases SET various_artists = $2
 WHERE id = $1;
+
+-- name: UpdateReleasePrimaryArtist :exec
+UPDATE artist_releases SET is_primary = $3
+WHERE artist_id = $1 AND release_id = $2;
 
 -- name: UpdateReleaseImage :exec
 UPDATE releases SET image = $2, image_source = $3

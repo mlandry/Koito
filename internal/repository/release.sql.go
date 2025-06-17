@@ -197,12 +197,7 @@ func (q *Queries) GetReleaseByMbzID(ctx context.Context, musicbrainzID *uuid.UUI
 const getReleasesWithoutImages = `-- name: GetReleasesWithoutImages :many
 SELECT
   r.id, r.musicbrainz_id, r.image, r.various_artists, r.image_source, r.title,
-  (
-    SELECT json_agg(DISTINCT jsonb_build_object('id', a.id, 'name', a.name))
-    FROM artists_with_name a
-    JOIN artist_releases ar ON a.id = ar.artist_id
-    WHERE ar.release_id = r.id
-  ) AS artists
+  get_artists_for_release(r.id) AS artists
 FROM releases_with_title r 
 WHERE r.image IS NULL 
   AND r.id > $2
@@ -257,12 +252,7 @@ const getTopReleasesFromArtist = `-- name: GetTopReleasesFromArtist :many
 SELECT
   r.id, r.musicbrainz_id, r.image, r.various_artists, r.image_source, r.title,
   COUNT(*) AS listen_count,
-  (
-    SELECT json_agg(DISTINCT jsonb_build_object('id', a.id, 'name', a.name))
-    FROM artists_with_name a
-    JOIN artist_releases ar ON ar.artist_id = a.id
-    WHERE ar.release_id = r.id
-  ) AS artists
+  get_artists_for_release(r.id) AS artists
 FROM listens l
 JOIN tracks t ON l.track_id = t.id
 JOIN releases_with_title r ON t.release_id = r.id
@@ -332,12 +322,7 @@ const getTopReleasesPaginated = `-- name: GetTopReleasesPaginated :many
 SELECT
   r.id, r.musicbrainz_id, r.image, r.various_artists, r.image_source, r.title,
   COUNT(*) AS listen_count,
-  (
-    SELECT json_agg(DISTINCT jsonb_build_object('id', a.id, 'name', a.name))
-    FROM artists_with_name a
-    JOIN artist_releases ar ON ar.artist_id = a.id
-    WHERE ar.release_id = r.id
-  ) AS artists
+  get_artists_for_release(r.id) AS artists
 FROM listens l
 JOIN tracks t ON l.track_id = t.id
 JOIN releases_with_title r ON t.release_id = r.id
@@ -458,6 +443,22 @@ type UpdateReleaseMbzIDParams struct {
 
 func (q *Queries) UpdateReleaseMbzID(ctx context.Context, arg UpdateReleaseMbzIDParams) error {
 	_, err := q.db.Exec(ctx, updateReleaseMbzID, arg.ID, arg.MusicBrainzID)
+	return err
+}
+
+const updateReleasePrimaryArtist = `-- name: UpdateReleasePrimaryArtist :exec
+UPDATE artist_releases SET is_primary = $3
+WHERE artist_id = $1 AND release_id = $2
+`
+
+type UpdateReleasePrimaryArtistParams struct {
+	ArtistID  int32
+	ReleaseID int32
+	IsPrimary bool
+}
+
+func (q *Queries) UpdateReleasePrimaryArtist(ctx context.Context, arg UpdateReleasePrimaryArtistParams) error {
+	_, err := q.db.Exec(ctx, updateReleasePrimaryArtist, arg.ArtistID, arg.ReleaseID, arg.IsPrimary)
 	return err
 }
 

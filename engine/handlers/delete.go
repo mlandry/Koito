@@ -10,7 +10,6 @@ import (
 	"github.com/gabehf/koito/internal/utils"
 )
 
-// DeleteTrackHandler deletes a track by its ID.
 func DeleteTrackHandler(store db.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -46,7 +45,6 @@ func DeleteTrackHandler(store db.DB) http.HandlerFunc {
 	}
 }
 
-// DeleteListenHandler deletes a listen record by track ID and timestamp.
 func DeleteListenHandler(store db.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -96,7 +94,6 @@ func DeleteListenHandler(store db.DB) http.HandlerFunc {
 	}
 }
 
-// DeleteArtistHandler deletes an artist by its ID.
 func DeleteArtistHandler(store db.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -132,7 +129,6 @@ func DeleteArtistHandler(store db.DB) http.HandlerFunc {
 	}
 }
 
-// DeleteAlbumHandler deletes an album by its ID.
 func DeleteAlbumHandler(store db.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

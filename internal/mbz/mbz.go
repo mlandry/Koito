@@ -52,19 +52,19 @@ func (c *MusicBrainzClient) getEntity(ctx context.Context, fmtStr string, id uui
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		l.Err(err).Msg("Failed to build MusicBrainz request")
-		return err
+		return fmt.Errorf("getEntity: %w", err)
 	}
 	l.Debug().Msg("Adding MusicBrainz request to queue")
 	body, err := c.queue(ctx, req)
 	if err != nil {
 		l.Err(err).Msg("MusicBrainz request failed")
-		return err
+		return fmt.Errorf("getEntity: %w", err)
 	}
 
 	err = json.Unmarshal(body, result)
 	if err != nil {
 		l.Err(err).Str("body", string(body)).Msg("Failed to unmarshal MusicBrainz response body")
-		return err
+		return fmt.Errorf("getEntity: %w", err)
 	}
 
 	return nil

@@ -14,6 +14,8 @@ type DB interface {
 	GetArtist(ctx context.Context, opts GetArtistOpts) (*models.Artist, error)
 	GetAlbum(ctx context.Context, opts GetAlbumOpts) (*models.Album, error)
 	GetTrack(ctx context.Context, opts GetTrackOpts) (*models.Track, error)
+	GetArtistsForAlbum(ctx context.Context, id int32) ([]*models.Artist, error)
+	GetArtistsForTrack(ctx context.Context, id int32) ([]*models.Artist, error)
 	GetTopTracksPaginated(ctx context.Context, opts GetItemsOpts) (*PaginatedResponse[*models.Track], error)
 	GetTopArtistsPaginated(ctx context.Context, opts GetItemsOpts) (*PaginatedResponse[*models.Artist], error)
 	GetTopAlbumsPaginated(ctx context.Context, opts GetItemsOpts) (*PaginatedResponse[*models.Album], error)
@@ -48,6 +50,8 @@ type DB interface {
 	SetPrimaryArtistAlias(ctx context.Context, id int32, alias string) error
 	SetPrimaryAlbumAlias(ctx context.Context, id int32, alias string) error
 	SetPrimaryTrackAlias(ctx context.Context, id int32, alias string) error
+	SetPrimaryAlbumArtist(ctx context.Context, id int32, artistId int32, value bool) error
+	SetPrimaryTrackArtist(ctx context.Context, id int32, artistId int32, value bool) error
 	// Delete
 	DeleteArtist(ctx context.Context, id int32) error
 	DeleteAlbum(ctx context.Context, id int32) error

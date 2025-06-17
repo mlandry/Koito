@@ -73,6 +73,7 @@ export default function SetVariousArtists({ id }: Props) {
                 <option value="false">False</option>
             </select>
                 {err && <p className="error">{err}</p>}
+                {success && <p className="success">{success}</p>}
             </div>
         </div>
     )

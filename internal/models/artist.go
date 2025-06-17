@@ -10,6 +10,7 @@ type Artist struct {
 	Image        *uuid.UUID `json:"image"`
 	ListenCount  int64      `json:"listen_count"`
 	TimeListened int64      `json:"time_listened"`
+	IsPrimary    bool       `json:"is_primary,omitempty"`
 }
 
 type SimpleArtist struct {

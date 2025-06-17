@@ -90,22 +90,22 @@ func DateRange(week, month, year int) (time.Time, time.Time, error) {
 	}
 
 	if month != 0 && (month < 1 || month > 12) {
-		return time.Time{}, time.Time{}, errors.New("invalid month")
+		return time.Time{}, time.Time{}, errors.New("DateRange: invalid month")
 	}
 
 	if week != 0 && (week < 1 || week > 53) {
-		return time.Time{}, time.Time{}, errors.New("invalid week")
+		return time.Time{}, time.Time{}, errors.New("DateRange: invalid week")
 	}
 
 	if year < 1 {
-		return time.Time{}, time.Time{}, errors.New("invalid year")
+		return time.Time{}, time.Time{}, errors.New("DateRange: invalid year")
 	}
 
 	loc := time.Local
 
 	if week != 0 {
 		if month != 0 {
-			return time.Time{}, time.Time{}, errors.New("cannot specify both week and month")
+			return time.Time{}, time.Time{}, errors.New("DateRange: cannot specify both week and month")
 		}
 		// Specific week
 		start := time.Date(year, 1, 1, 0, 0, 0, 0, loc)
@@ -133,31 +133,34 @@ func DateRange(week, month, year int) (time.Time, time.Time, error) {
 func CopyFile(src, dst string) (err error) {
 	sfi, err := os.Stat(src)
 	if err != nil {
-		return
+		return fmt.Errorf("CopyFile: %w", err)
 	}
 	if !sfi.Mode().IsRegular() {
 		// cannot copy non-regular files (e.g., directories,
 		// symlinks, devices, etc.)
-		return fmt.Errorf("non-regular source file %s (%q)", sfi.Name(), sfi.Mode().String())
+		return fmt.Errorf("CopyFile: non-regular source file %s (%q)", sfi.Name(), sfi.Mode().String())
 	}
 	dfi, err := os.Stat(dst)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			return
+			return fmt.Errorf("CopyFile: %w", err)
 		}
 	} else {
 		if !(dfi.Mode().IsRegular()) {
-			return fmt.Errorf("non-regular destination file %s (%q)", dfi.Name(), dfi.Mode().String())
+			return fmt.Errorf("CopyFile: non-regular destination file %s (%q)", dfi.Name(), dfi.Mode().String())
 		}
 		if os.SameFile(sfi, dfi) {
-			return
+			return fmt.Errorf("CopyFile: %w", err)
 		}
 	}
 	if err = os.Link(src, dst); err == nil {
-		return
+		return fmt.Errorf("CopyFile: %w", err)
 	}
 	err = copyFileContents(src, dst)
-	return
+	if err != nil {
+		return fmt.Errorf("CopyFile: %w", err)
+	}
+	return nil
 }
 
 // copyFileContents copies the contents of the file named src to the file named
@@ -167,24 +170,22 @@ func CopyFile(src, dst string) (err error) {
 func copyFileContents(src, dst string) (err error) {
 	in, err := os.Open(src)
 	if err != nil {
-		return
+		return fmt.Errorf("copyFileContents: %w", err)
 	}
 	defer in.Close()
 	out, err := os.Create(dst)
 	if err != nil {
-		return
+		return fmt.Errorf("copyFileContents: %w", err)
 	}
-	defer func() {
-		cerr := out.Close()
-		if err == nil {
-			err = cerr
-		}
-	}()
+	defer out.Close()
 	if _, err = io.Copy(out, in); err != nil {
-		return
+		return fmt.Errorf("copyFileContents: %w", err)
 	}
 	err = out.Sync()
-	return
+	if err != nil {
+		return fmt.Errorf("copyFileContents: %w", err)
+	}
+	return nil
 }
 
 // Returns the same slice, but with all strings that are equal (with strings.EqualFold)
@@ -281,7 +282,7 @@ func GenerateRandomString(length int) (string, error) {
 	for i := range length {
 		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("GenerateRandomString: %w", err)
 		}
 		ret[i] = letters[num.Int64()]
 	}
@@ -310,4 +311,19 @@ func MoreThanOneString(s ...string) bool {
 		}
 	}
 	return count > 1
+}
+
+func ParseBool(s string) (value, ok bool) {
+	if strings.ToLower(s) == "true" {
+		value = true
+		ok = true
+		return
+	} else if strings.ToLower(s) == "false" {
+		value = false
+		ok = true
+		return
+	} else {
+		ok = false
+		return
+	}
 }

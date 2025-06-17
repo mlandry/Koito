@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/gabehf/koito/internal/db"
@@ -18,7 +19,7 @@ func (d *Psql) GetListensPaginated(ctx context.Context, opts db.GetItemsOpts) (*
 	offset := (opts.Page - 1) * opts.Limit
 	t1, t2, err := utils.DateRange(opts.Week, opts.Month, opts.Year)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetListensPaginated: %w", err)
 	}
 	if opts.Month == 0 && opts.Year == 0 {
 		// use period, not date range
@@ -41,7 +42,7 @@ func (d *Psql) GetListensPaginated(ctx context.Context, opts db.GetItemsOpts) (*
 			ID:           int32(opts.TrackID),
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetListensPaginated: GetLastListensFromTrackPaginated: %w", err)
 		}
 		listens = make([]*models.Listen, len(rows))
 		for i, row := range rows {
@@ -54,7 +55,7 @@ func (d *Psql) GetListensPaginated(ctx context.Context, opts db.GetItemsOpts) (*
 			}
 			err = json.Unmarshal(row.Artists, &t.Track.Artists)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("GetListensPaginated: Unmarshal: %w", err)
 			}
 			listens[i] = t
 		}
@@ -64,7 +65,7 @@ func (d *Psql) GetListensPaginated(ctx context.Context, opts db.GetItemsOpts) (*
 			TrackID:      int32(opts.TrackID),
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetListensPaginated: CountListensFromTrack: %w", err)
 		}
 	} else if opts.AlbumID > 0 {
 		l.Debug().Msgf("Fetching %d listens with period %s on page %d from range %v to %v",
@@ -77,7 +78,7 @@ func (d *Psql) GetListensPaginated(ctx context.Context, opts db.GetItemsOpts) (*
 			ReleaseID:    int32(opts.AlbumID),
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetListensPaginated: GetLastListensFromReleasePaginated: %w", err)
 		}
 		listens = make([]*models.Listen, len(rows))
 		for i, row := range rows {
@@ -90,7 +91,7 @@ func (d *Psql) GetListensPaginated(ctx context.Context, opts db.GetItemsOpts) (*
 			}
 			err = json.Unmarshal(row.Artists, &t.Track.Artists)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("GetListensPaginated: Unmarshal: %w", err)
 			}
 			listens[i] = t
 		}
@@ -100,7 +101,7 @@ func (d *Psql) GetListensPaginated(ctx context.Context, opts db.GetItemsOpts) (*
 			ReleaseID:    int32(opts.AlbumID),
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetListensPaginated: CountListensFromRelease: %w", err)
 		}
 	} else if opts.ArtistID > 0 {
 		l.Debug().Msgf("Fetching %d listens with period %s on page %d from range %v to %v",
@@ -113,7 +114,7 @@ func (d *Psql) GetListensPaginated(ctx context.Context, opts db.GetItemsOpts) (*
 			ArtistID:     int32(opts.ArtistID),
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetListensPaginated: GetLastListensFromArtistPaginated: %w", err)
 		}
 		listens = make([]*models.Listen, len(rows))
 		for i, row := range rows {
@@ -126,7 +127,7 @@ func (d *Psql) GetListensPaginated(ctx context.Context, opts db.GetItemsOpts) (*
 			}
 			err = json.Unmarshal(row.Artists, &t.Track.Artists)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("GetListensPaginated: Unmarshal: %w", err)
 			}
 			listens[i] = t
 		}
@@ -136,7 +137,7 @@ func (d *Psql) GetListensPaginated(ctx context.Context, opts db.GetItemsOpts) (*
 			ArtistID:     int32(opts.ArtistID),
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetListensPaginated: CountListensFromArtist: %w", err)
 		}
 	} else {
 		l.Debug().Msgf("Fetching %d listens with period %s on page %d from range %v to %v",
@@ -148,7 +149,7 @@ func (d *Psql) GetListensPaginated(ctx context.Context, opts db.GetItemsOpts) (*
 			Offset:       int32(offset),
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetListensPaginated: GetLastListensPaginated: %w", err)
 		}
 		listens = make([]*models.Listen, len(rows))
 		for i, row := range rows {
@@ -161,7 +162,7 @@ func (d *Psql) GetListensPaginated(ctx context.Context, opts db.GetItemsOpts) (*
 			}
 			err = json.Unmarshal(row.Artists, &t.Track.Artists)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("GetListensPaginated: Unmarshal: %w", err)
 			}
 			listens[i] = t
 		}
@@ -170,7 +171,7 @@ func (d *Psql) GetListensPaginated(ctx context.Context, opts db.GetItemsOpts) (*
 			ListenedAt_2: t2,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetListensPaginated: CountListens: %w", err)
 		}
 		l.Debug().Msgf("Database responded with %d tracks out of a total %d", len(rows), count)
 	}

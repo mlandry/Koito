@@ -199,28 +199,39 @@ func (q *Queries) GetArtistByName(ctx context.Context, alias string) (GetArtistB
 
 const getReleaseArtists = `-- name: GetReleaseArtists :many
 SELECT 
-  a.id, a.musicbrainz_id, a.image, a.image_source, a.name
+  a.id, a.musicbrainz_id, a.image, a.image_source, a.name,
+  ar.is_primary as is_primary
 FROM artists_with_name a
 LEFT JOIN artist_releases ar ON a.id = ar.artist_id
 WHERE ar.release_id = $1
-GROUP BY a.id, a.musicbrainz_id, a.image, a.image_source, a.name
+GROUP BY a.id, a.musicbrainz_id, a.image, a.image_source, a.name, ar.is_primary
 `
 
-func (q *Queries) GetReleaseArtists(ctx context.Context, releaseID int32) ([]ArtistsWithName, error) {
+type GetReleaseArtistsRow struct {
+	ID            int32
+	MusicBrainzID *uuid.UUID
+	Image         *uuid.UUID
+	ImageSource   pgtype.Text
+	Name          string
+	IsPrimary     pgtype.Bool
+}
+
+func (q *Queries) GetReleaseArtists(ctx context.Context, releaseID int32) ([]GetReleaseArtistsRow, error) {
 	rows, err := q.db.Query(ctx, getReleaseArtists, releaseID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ArtistsWithName
+	var items []GetReleaseArtistsRow
 	for rows.Next() {
-		var i ArtistsWithName
+		var i GetReleaseArtistsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.MusicBrainzID,
 			&i.Image,
 			&i.ImageSource,
 			&i.Name,
+			&i.IsPrimary,
 		); err != nil {
 			return nil, err
 		}
@@ -297,28 +308,39 @@ func (q *Queries) GetTopArtistsPaginated(ctx context.Context, arg GetTopArtistsP
 
 const getTrackArtists = `-- name: GetTrackArtists :many
 SELECT 
-  a.id, a.musicbrainz_id, a.image, a.image_source, a.name
+  a.id, a.musicbrainz_id, a.image, a.image_source, a.name,
+  at.is_primary as is_primary
 FROM artists_with_name a
 LEFT JOIN artist_tracks at ON a.id = at.artist_id
 WHERE at.track_id = $1
-GROUP BY a.id, a.musicbrainz_id, a.image, a.image_source, a.name
+GROUP BY a.id, a.musicbrainz_id, a.image, a.image_source, a.name, at.is_primary
 `
 
-func (q *Queries) GetTrackArtists(ctx context.Context, trackID int32) ([]ArtistsWithName, error) {
+type GetTrackArtistsRow struct {
+	ID            int32
+	MusicBrainzID *uuid.UUID
+	Image         *uuid.UUID
+	ImageSource   pgtype.Text
+	Name          string
+	IsPrimary     pgtype.Bool
+}
+
+func (q *Queries) GetTrackArtists(ctx context.Context, trackID int32) ([]GetTrackArtistsRow, error) {
 	rows, err := q.db.Query(ctx, getTrackArtists, trackID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ArtistsWithName
+	var items []GetTrackArtistsRow
 	for rows.Next() {
-		var i ArtistsWithName
+		var i GetTrackArtistsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.MusicBrainzID,
 			&i.Image,
 			&i.ImageSource,
 			&i.Name,
+			&i.IsPrimary,
 		); err != nil {
 			return nil, err
 		}

@@ -226,6 +226,7 @@ type Artist = {
     listen_count: number
     musicbrainz_id: string
     time_listened: number
+    is_primary: boolean
 }
 type Album = {
     id: number,

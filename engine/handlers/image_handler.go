@@ -117,7 +117,12 @@ func serveDefaultImage(w http.ResponseWriter, r *http.Request, size catalog.Imag
 				return
 			}
 			lock.Lock()
-			utils.CopyFile(path.Join("assets", "default_img"), defaultImagePath)
+			err = utils.CopyFile(path.Join("assets", "default_img"), defaultImagePath)
+			if err != nil {
+				l.Err(err).Msg("serveDefaultImage: Error when copying default image from assets")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 			lock.Unlock()
 		} else if err != nil {
 			l.Err(err).Msg("serveDefaultImage: Error when attempting to read default image in cache")
@@ -151,7 +156,7 @@ func serveDefaultImage(w http.ResponseWriter, r *http.Request, size catalog.Imag
 func downloadMissingImage(ctx context.Context, store db.DB, id uuid.UUID) (string, error) {
 	src, err := store.GetImageSource(ctx, id)
 	if err != nil {
-		return "", fmt.Errorf("downloadMissingImage: store.GetImageSource: %w", err)
+		return "", fmt.Errorf("downloadMissingImage: %w", err)
 	}
 	var size catalog.ImageSize
 	if cfg.FullImageCacheEnabled() {
@@ -161,7 +166,7 @@ func downloadMissingImage(ctx context.Context, store db.DB, id uuid.UUID) (strin
 	}
 	err = catalog.DownloadAndCacheImage(ctx, id, src, size)
 	if err != nil {
-		return "", fmt.Errorf("downloadMissingImage: catalog.DownloadAndCacheImage: %w", err)
+		return "", fmt.Errorf("downloadMissingImage: %w", err)
 	}
 	return path.Join(catalog.SourceImageDir(), id.String()), nil
 }
