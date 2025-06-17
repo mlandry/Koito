@@ -71,6 +71,9 @@ func SubmitListen(ctx context.Context, store db.DB, opts SubmitListenOpts) error
 		return errors.New("track name and artist are required")
 	}
 
+	// bandaid to ensure new activity does not have sub-second precision
+	opts.Time = opts.Time.Truncate(time.Second)
+
 	artists, err := AssociateArtists(
 		ctx,
 		store,

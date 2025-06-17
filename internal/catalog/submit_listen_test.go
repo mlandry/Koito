@@ -67,7 +67,7 @@ func TestSubmitListen_CreateAllMbzIDs(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, p.Items, 1)
 	l := p.Items[0]
-	EqualTime(t, opts.Time, l.Time)
+	EqualTime(t, opts.Time.Truncate(time.Second), l.Time)
 }
 
 func TestSubmitListen_CreateAllMbzIDsNoReleaseGroupID(t *testing.T) {
