@@ -13,6 +13,7 @@ import (
 	"github.com/gabehf/koito/internal/db"
 	"github.com/gabehf/koito/internal/logger"
 	"github.com/gabehf/koito/internal/mbz"
+	"github.com/gabehf/koito/internal/utils"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -257,6 +258,83 @@ func TestImportListenBrainz_MbzDisabled(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, listens.Items, 1)
 	assert.WithinDuration(t, time.Unix(1749780612, 0), listens.Items[0].Time, 1*time.Second)
+
+	truncateTestData(t)
+}
+
+func TestImportKoito(t *testing.T) {
+
+	src := path.Join("..", "test_assets", "koito_export_test.json")
+	destDir := filepath.Join(cfg.ConfigDir(), "import")
+	dest := filepath.Join(destDir, "koito_export_test.json")
+
+	ctx := context.Background()
+
+	// 4 every wave to ever rise, 3 i can't feel you, 5 giri giri, 1 nijinoiroyo
+	giriReleaseMBID := uuid.MustParse("ac1f8da0-21d7-426e-83b0-befff06f0871")
+	suzukiMBID := uuid.MustParse("30f851bb-dba3-4e9b-811c-5f27f595c86a")
+	nijinoTrackMBID := uuid.MustParse("a4f26836-3894-46c1-acac-227808308687")
+
+	input, err := os.ReadFile(src)
+	require.NoError(t, err)
+
+	require.NoError(t, os.WriteFile(dest, input, os.ModePerm))
+
+	engine.RunImporter(logger.Get(), store, &mbz.MbzErrorCaller{})
+
+	// ensure all artists are saved
+	_, err = store.GetArtist(ctx, db.GetArtistOpts{Name: "American Football"})
+	require.NoError(t, err)
+	_, err = store.GetArtist(ctx, db.GetArtistOpts{Name: "Rachel Goswell"})
+	require.NoError(t, err)
+	_, err = store.GetArtist(ctx, db.GetArtistOpts{Name: "Elizabeth Powell"})
+	require.NoError(t, err)
+
+	// ensure artist aliases are saved
+	artist, err := store.GetArtist(ctx, db.GetArtistOpts{MusicBrainzID: suzukiMBID})
+	require.NoError(t, err)
+	assert.Equal(t, "鈴木雅之", artist.Name)
+	assert.Contains(t, artist.Aliases, "Masayuki Suzuki")
+	_, err = store.GetArtist(ctx, db.GetArtistOpts{Name: "すぅ"})
+	require.NoError(t, err)
+
+	// ensure albums are saved
+	album, err := store.GetAlbum(ctx, db.GetAlbumOpts{MusicBrainzID: giriReleaseMBID})
+	require.NoError(t, err)
+	assert.Equal(t, "GIRI GIRI", album.Title)
+	// ensure album aliases are saved
+	artist, err = store.GetArtist(ctx, db.GetArtistOpts{Name: "NELKE"})
+	require.NoError(t, err)
+	album, err = store.GetAlbum(ctx, db.GetAlbumOpts{Title: "虹の色よ鮮やかであれ (NELKE ver.)", ArtistID: artist.ID})
+	require.NoError(t, err)
+	aliases, err := store.GetAllAlbumAliases(ctx, album.ID)
+	require.NoError(t, err)
+	assert.Contains(t, utils.FlattenAliases(aliases), "Nijinoiroyo Azayakadeare (NELKE ver.)")
+
+	// ensure all tracks are saved
+	track, err := store.GetTrack(ctx, db.GetTrackOpts{MusicBrainzID: nijinoTrackMBID})
+	require.NoError(t, err)
+	assert.Equal(t, "虹の色よ鮮やかであれ (NELKE ver.)", track.Title)
+	aliases, err = store.GetAllTrackAliases(ctx, track.ID)
+	require.NoError(t, err)
+	assert.Contains(t, utils.FlattenAliases(aliases), "Nijinoiroyo Azayakadeare (NELKE ver.)")
+	// ensure track duration is saved
+	assert.EqualValues(t, 218, track.Duration)
+
+	artist, err = store.GetArtist(ctx, db.GetArtistOpts{MusicBrainzID: suzukiMBID})
+	require.NoError(t, err)
+	_, err = store.GetTrack(ctx, db.GetTrackOpts{Title: "GIRI GIRI", ArtistIDs: []int32{artist.ID}})
+	require.NoError(t, err)
+
+	count, err := store.CountTracks(ctx, db.PeriodAllTime)
+	require.NoError(t, err)
+	assert.EqualValues(t, 4, count)
+	count, err = store.CountAlbums(ctx, db.PeriodAllTime)
+	require.NoError(t, err)
+	assert.EqualValues(t, 3, count)
+	count, err = store.CountArtists(ctx, db.PeriodAllTime)
+	require.NoError(t, err)
+	assert.EqualValues(t, 6, count)
 
 	truncateTestData(t)
 }

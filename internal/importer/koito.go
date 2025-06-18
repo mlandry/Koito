@@ -43,10 +43,11 @@ func ImportKoitoFile(ctx context.Context, store db.DB, filename string) error {
 
 	for i := range data.Listens {
 		// use this for save/get mbid for all artist/album/track
-		mbid := uuid.Nil
+		var mbid uuid.UUID
 
 		artistIds := make([]int32, 0)
 		for _, ia := range data.Listens[i].Artists {
+			mbid = uuid.Nil
 			if ia.MBID != nil {
 				mbid = *ia.MBID
 			}
@@ -81,6 +82,7 @@ func ImportKoitoFile(ctx context.Context, store db.DB, filename string) error {
 		}
 		// call associate album
 		albumId := int32(0)
+		mbid = uuid.Nil
 		if data.Listens[i].Album.MBID != nil {
 			mbid = *data.Listens[i].Album.MBID
 		}
@@ -117,6 +119,7 @@ func ImportKoitoFile(ctx context.Context, store db.DB, filename string) error {
 		}
 
 		// call associate track
+		mbid = uuid.Nil
 		if data.Listens[i].Track.MBID != nil {
 			mbid = *data.Listens[i].Track.MBID
 		}

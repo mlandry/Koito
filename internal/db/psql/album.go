@@ -139,6 +139,11 @@ func (d *Psql) SaveAlbum(ctx context.Context, opts db.SaveAlbumOpts) (*models.Al
 		return nil, fmt.Errorf("SaveAlbum: Commit: %w", err)
 	}
 
+	err = d.SaveAlbumAliases(ctx, r.ID, opts.Aliases, "MusicBrainz")
+	if err != nil {
+		l.Err(err).Msgf("Failed to save aliases for album %s", opts.Title)
+	}
+
 	return &models.Album{
 		ID:             r.ID,
 		MbzID:          r.MusicBrainzID,
