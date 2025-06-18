@@ -119,6 +119,7 @@ func (d *Psql) SaveTrack(ctx context.Context, opts db.SaveTrackOpts) (*models.Tr
 	trackRow, err := qtx.InsertTrack(ctx, repository.InsertTrackParams{
 		MusicBrainzID: insertMbzID,
 		ReleaseID:     opts.AlbumID,
+		Duration:      opts.Duration,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("SaveTrack: InsertTrack: %w", err)
@@ -148,9 +149,10 @@ func (d *Psql) SaveTrack(ctx context.Context, opts db.SaveTrackOpts) (*models.Tr
 		return nil, fmt.Errorf("SaveTrack: Commit: %w", err)
 	}
 	return &models.Track{
-		ID:    trackRow.ID,
-		MbzID: insertMbzID,
-		Title: opts.Title,
+		ID:       trackRow.ID,
+		MbzID:    insertMbzID,
+		Title:    opts.Title,
+		Duration: opts.Duration,
 	}, nil
 }
 
