@@ -1,28 +1,10 @@
 import { useQuery } from "@tanstack/react-query"
 import { getActivity, type getActivityArgs, type ListenActivityItem } from "api/api"
 import Popup from "./Popup"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useTheme } from "~/hooks/useTheme"
 import ActivityOptsSelector from "./ActivityOptsSelector"
-
-function getPrimaryColor(): string {
-    const value = getComputedStyle(document.documentElement)
-        .getPropertyValue('--color-primary')
-        .trim();
-
-    const rgbMatch = value.match(/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/);
-    if (rgbMatch) {
-        const [, r, g, b] = rgbMatch.map(Number);
-        return (
-            '#' +
-            [r, g, b]
-                .map((n) => n.toString(16).padStart(2, '0'))
-                .join('')
-        );
-    }
-
-    return value;
-}
+import { themes } from "~/styles/themes.css"
 
 interface Props {
     step?: string 
@@ -47,7 +29,6 @@ export default function ActivityGrid({
         configurable = false,
     }: Props) {
 
-    const [color, setColor] = useState(getPrimaryColor())
     const [stepState, setStep] = useState(step)
     const [rangeState, setRange] = useState(range)
         
@@ -69,14 +50,8 @@ export default function ActivityGrid({
 
 
     const { theme } = useTheme();
-    useEffect(() => {
-        const raf = requestAnimationFrame(() => {
-          const color = getPrimaryColor()
-          setColor(color);
-        });
-      
-        return () => cancelAnimationFrame(raf);
-      }, [theme]);      
+    const currentTheme = themes.find(t => t.name === theme);
+    const color = currentTheme?.primary || '#f5a97f';
 
     if (isPending) { 
         return (
