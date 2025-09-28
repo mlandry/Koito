@@ -4,15 +4,31 @@ import Popup from "./Popup"
 import { useState } from "react"
 import { useTheme } from "~/hooks/useTheme"
 import ActivityOptsSelector from "./ActivityOptsSelector"
-import { themes } from "~/styles/themes.css"
+import type { Theme } from "~/styles/themes.css"
 
+
+function getPrimaryColor(theme: Theme): string {
+    const value = theme.primary;
+    const rgbMatch = value.match(/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/);
+    if (rgbMatch) {
+        const [, r, g, b] = rgbMatch.map(Number);
+        return (
+            '#' +
+            [r, g, b]
+                .map((n) => n.toString(16).padStart(2, '0'))
+                .join('')
+        );
+    }
+
+    return value;
+}
 interface Props {
-    step?: string 
-    range?: number 
-    month?: number 
-    year?: number 
-    artistId?: number 
-    albumId?: number 
+    step?: string
+    range?: number
+    month?: number
+    year?: number
+    artistId?: number
+    albumId?: number
     trackId?: number
     configurable?: boolean
     autoAdjust?: boolean
@@ -49,9 +65,9 @@ export default function ActivityGrid({
     });
 
 
-    const { theme } = useTheme();
-    const currentTheme = themes.find(t => t.name === theme);
-    const color = currentTheme?.primary || '#f5a97f';
+    const { theme, themeName } = useTheme();
+    const color = getPrimaryColor(theme);
+
 
     if (isPending) { 
         return (
@@ -108,7 +124,7 @@ export default function ActivityGrid({
         }
 
         v = Math.min(v, t)
-        if (theme === "pearl") {
+        if (themeName === "pearl") {
             // special case for the only light theme lol
             // could be generalized by pragmatically comparing the
             // lightness of the bg vs the primary but eh
